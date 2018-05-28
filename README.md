@@ -47,7 +47,7 @@ sudo apt-get -y install python3-dev libbluetooth-dev libcap2-bin
 sudo setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python))
 ```
 
-You'll also need a virtual environment (recomended) with some Python packages:
+You'll also need a virtual environment (recommended) with some Python packages:
 
 ```
 pip install -r app/requirements.txt
