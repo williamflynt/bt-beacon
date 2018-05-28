@@ -1,0 +1,6 @@
+PyBeacon
+beacontools
+pybluez
+flask
+flask-socketio
+eventlet

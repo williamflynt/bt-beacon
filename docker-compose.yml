@@ -1,0 +1,11 @@
+ersion: '3'
+services:
+
+  web:
+    image: "nginx:stable-alpine"
+
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile.app
+    image: bt-beacon:app
