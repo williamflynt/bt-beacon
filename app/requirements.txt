@@ -1,8 +1,0 @@
-PyBeacon
-beacontools
-pybluez
-pubnub>=4.0.13
-pytz
-flask
-flask-socketio
-eventlet

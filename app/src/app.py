@@ -1,3 +1,5 @@
+import os
+
 import eventlet
 
 from flask import Flask, render_template
@@ -10,9 +12,19 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'thisisasecret!'
 socketio = SocketIO(app, async_mode='eventlet')
 
+try:
+    SUB_KEY = os.environ['SUB_KEY']
+except KeyError:
+    SUB_KEY = "sub-c-a94e45d2-5902-11e8-9b53-6e008aa3b186"
+
 
 @app.route('/')
 def base_page():
+    return render_template('pubnub.html', sub_key=SUB_KEY)
+
+
+@app.route('/websocketdemo')
+def socket_demo():
     return render_template('main.html')
 
 
@@ -71,4 +83,4 @@ def on_begin(*args, **kwargs):
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host="0.0.0.0")

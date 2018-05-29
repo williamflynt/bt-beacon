@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BT Beacons via PubNub</title>
+</head>
+<body>
+
+<h2>Beacon Scanner: <span id="status">Initializing</span></h2>
+<p id="category"></p>
+
+<h3>Messages</h3>
+
+<div id="messages"
+     data-sub-key="{{ sub_key }}"
+     style="height: 450px; width: 700px; overflow-y: auto;"></div>
+
+<button id="toggle" onclick="toggleUpdate()">Pause</button>
+
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.3.js"></script>
+<script>
+    const messages = document.getElementById("messages");
+    const sub_key = messages.getAttribute("data-sub-key");
+    let update = true;
+
+    let pubnub = new PubNub({
+        subscribeKey: sub_key,
+        ssl: true
+    });
+
+    function scrollToBottom() {
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function toggleUpdate() {
+        update = !update;
+        if (update) {
+            document.getElementById("toggle").innerText = "Pause"
+        } else {
+            document.getElementById("toggle").innerText = "Play"
+        }
+    }
+
+    scrollToBottom();
+
+    window.onload = function () {
+        document.getElementById("status").innerHTML = "Creating Listener...";
+
+        pubnub.addListener({
+            message: function (m) {
+                let channelName = m.channel; // The channel for which the message belongs
+                let channelGroup = m.subscription; // The channel group or wildcard subscription match (if exists)
+                let pubTT = m.timetoken; // Publish timetoken
+                let msg = m.message; // The Payload
+
+                if (update) {
+                    let new_msg = document.createElement("p");
+                    new_msg.style.cssText = 'color: #777; font-size: 0.7em;';
+                    new_msg.innerText = msg;
+                    document.getElementById("messages").appendChild(new_msg);
+
+                    // Doesn't work
+                    let shouldScroll = messages.scrollHeight + messages.scrollTop >= messages.clientHeight;
+                    if (shouldScroll) {
+                        scrollToBottom();
+                    }
+                }
+            },
+            status: function (s) {
+                let affectedChannelGroups = s.affectedChannelGroups;
+                let affectedChannels = s.affectedChannels;
+                let category = s.category;
+                let operation = s.operation;
+                document.getElementById("category").innerHTML = category;
+            }
+        });
+
+        document.getElementById("status").innerHTML = "Subscribing...";
+
+        pubnub.subscribe({
+            channels: ['raw_channel'],
+        });
+
+        document.getElementById("status").innerHTML = "Subscribed";
+    }
+</script>
+
+</body>
+</html>

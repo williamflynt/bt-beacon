@@ -1,11 +1,29 @@
-ersion: '3'
+version: '3.6'
+
 services:
 
-  web:
-    image: "nginx:stable-alpine"
-
-  app:
+  scan:
+    env_file:
+      - ./production.env
     build:
-      context: ./
-      dockerfile: Dockerfile.app
-    image: bt-beacon:app
+      context: .
+      dockerfile: Dockerfile
+      args:
+        pub_key: ${PUB_KEY:?err}
+        sub_key: ${SUB_KEY:?err}
+      target: scan
+    image: bt-beacon/scan:v1
+
+  flask:
+    env_file:
+      - ./production.env
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        pub_key: ${PUB_KEY:?err}
+        sub_key: ${SUB_KEY:?err}
+      target: flask
+    image: bt-beacon/flask:v1
+    ports:
+      - "5000:5000"
