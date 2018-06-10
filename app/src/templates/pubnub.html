@@ -56,7 +56,7 @@
                 if (update) {
                     let new_msg = document.createElement("p");
                     new_msg.style.cssText = 'color: #777; font-size: 0.7em;';
-                    new_msg.innerText = msg;
+                    new_msg.innerText = channelName + ":  " + msg;
                     document.getElementById("messages").appendChild(new_msg);
 
                     // Doesn't work
@@ -78,7 +78,7 @@
         document.getElementById("status").innerHTML = "Subscribing...";
 
         pubnub.subscribe({
-            channels: ['raw_channel'],
+            channels: ['raw_channel', 'ranged', 'located'],
         });
 
         document.getElementById("status").innerHTML = "Subscribed";
