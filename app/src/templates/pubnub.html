@@ -3,19 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <title>BT Beacons via PubNub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.2/css/foundation.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.2/js/foundation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.2/js/vendor/jquery.min.js"></script>
 </head>
 <body>
 
-<h2>Beacon Scanner: <span id="status">Initializing</span></h2>
-<p id="category"></p>
+<div class="grid-container">
+    <h2>Beacon Scanner: <span id="status">Initializing</span></h2>
+    <p id="category"></p>
 
-<h3>Messages</h3>
+    <h3>Messages</h3>
+    <button id="toggle" onclick="toggleUpdate()" type="button" class="success button">Pause</button>
 
-<div id="messages"
-     data-sub-key="{{ sub_key }}"
-     style="height: 450px; width: 700px; overflow-y: auto;"></div>
+    <div class="grid-x grid-margin-x" id="messages" data-sub-key="{{ sub_key }}">
+        <div id="raw_channel_ctr" class="cell auto">
+            <h5>raw_channel</h5>
+            <div id="raw_channel" style="height: 450px; overflow-y: scroll;"></div>
+        </div>
+        <div id="ranged_ctr" class="cell auto">
+            <h5>ranged</h5>
+            <div id="ranged" style="height: 450px; overflow-y: scroll;"></div>
+        </div>
+        <div id="located_ctr" class="cell auto">
+            <h5>located</h5>
+            <div id="located" style="height: 450px; overflow-y: scroll;"></div>
+        </div>
+        <div id="nodes_ctr" class="cell auto">
+            <h5>nodes</h5>
+            <div id="nodes" style="height: 450px; overflow-y: scroll;"></div>
+        </div>
+    </div>
+</div>
 
-<button id="toggle" onclick="toggleUpdate()">Pause</button>
 
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.3.js"></script>
 <script>
@@ -28,8 +48,9 @@
         ssl: true
     });
 
-    function scrollToBottom() {
-        messages.scrollTop = messages.scrollHeight;
+    function scrollToBottom(divId) {
+        let element = document.getElementById(divId);
+        element.scrollTop = element.scrollHeight;
     }
 
     function toggleUpdate() {
@@ -40,8 +61,6 @@
             document.getElementById("toggle").innerText = "Play"
         }
     }
-
-    scrollToBottom();
 
     window.onload = function () {
         document.getElementById("status").innerHTML = "Creating Listener...";
@@ -56,13 +75,17 @@
                 if (update) {
                     let new_msg = document.createElement("p");
                     new_msg.style.cssText = 'color: #777; font-size: 0.7em;';
-                    new_msg.innerText = channelName + ":  " + msg;
-                    document.getElementById("messages").appendChild(new_msg);
+                    if (msg !== null && typeof msg === 'object') {
+                        msg = JSON.stringify(msg)
+                    }
+                    new_msg.innerText = msg;
+                    let msg_element = document.getElementById(channelName);
+                    msg_element.appendChild(new_msg);
 
-                    // Doesn't work
-                    let shouldScroll = messages.scrollHeight + messages.scrollTop >= messages.clientHeight;
+                    // Doesn't allow for scrolling up at all
+                    let shouldScroll = msg_element.scrollHeight + msg_element.scrollTop >= msg_element.clientHeight;
                     if (shouldScroll) {
-                        scrollToBottom();
+                        scrollToBottom(channelName);
                     }
                 }
             },

@@ -99,8 +99,8 @@ class ScanService(object):
                         }}
         self.pubnub.publish() \
             .channel('nodes') \
-            .message(init_message). \
-            should_store(True) \
+            .message(init_message) \
+            .should_store(True) \
             .sync()
         print("{} at coords {}".format(NODE, NODE_COORDS))
         self.scanner = BeaconScanner(self._publish)
