@@ -3,39 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <title>BT Beacons via PubNub</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.2/css/foundation.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.2/js/foundation.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.2/js/vendor/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/css/foundation.css">
 </head>
 <body>
 
 <div class="grid-container">
-    <h2>Beacon Scanner: <span id="status">Initializing</span></h2>
-    <p id="category"></p>
+    <h3>Beacon Scanner: <span id="status">Initializing</span>
+        <small id="category"></small>
+    </h3>
 
-    <h3>Messages</h3>
     <button id="toggle" onclick="toggleUpdate()" type="button" class="success button">Pause</button>
 
+    <div class="grid-x grid-margin-x">
+        <div id="svgSpace" class="cell auto" style="border: 1px solid dimgray;"></div>
+    </div>
+
+    <h5>Raw Messages</h5>
+    <hr/>
     <div class="grid-x grid-margin-x" id="messages" data-sub-key="{{ sub_key }}">
-        <div id="raw_channel_ctr" class="cell auto">
-            <h5>raw_channel</h5>
-            <div id="raw_channel" style="height: 450px; overflow-y: scroll;"></div>
-        </div>
         <div id="ranged_ctr" class="cell auto">
             <h5>ranged</h5>
-            <div id="ranged" style="height: 450px; overflow-y: scroll;"></div>
+            <div id="ranged" style="height: 300px; overflow-y: scroll;"></div>
         </div>
         <div id="located_ctr" class="cell auto">
             <h5>located</h5>
-            <div id="located" style="height: 450px; overflow-y: scroll;"></div>
+            <div id="located" style="height: 300px; overflow-y: scroll;"></div>
         </div>
+    </div>
+
+    <div class="grid-x grid-margin-x" id="messages2">
+        <div id="raw_channel_ctr" class="cell auto">
+            <h5>raw_channel</h5>
+            <div id="raw_channel" style="height: 300px; overflow-y: scroll;"></div>
+        </div>
+
         <div id="nodes_ctr" class="cell auto">
             <h5>nodes</h5>
-            <div id="nodes" style="height: 450px; overflow-y: scroll;"></div>
+            <div id="nodes" style="height: 300px; overflow-y: scroll;"></div>
         </div>
     </div>
 </div>
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+    let defaultWidth = 10;
+    let defaultHeight = 10;
+
+    let svgContainer = d3.select("#svgSpace").append("svg")
+        .attr("width", defaultWidth)
+        .attr("height", defaultHeight)
+        .style("margin", "10px");
+
+    let c1 = svgContainer
+        .append("circle");
+    let c2 = svgContainer
+        .append("circle");
+
+    c2.attr("cx", svgContainer.attr("width") / 2)
+        .attr("cy", svgContainer.attr("height") / 2)
+        .attr("r", 20)
+        .style("fill", "gray")
+        .style("opacity", 0.5);
+
+    c1.attr("cx", svgContainer.attr("width") / 2)
+        .attr("cy", svgContainer.attr("height") / 2)
+        .attr("r", 5)
+        .style("fill", "gray");
+
+    function updateSize(x, y, offset = 0) {
+        x = x + offset;
+        y = y + offset;
+
+        if (defaultWidth < x) {
+            defaultWidth = x;
+            svgContainer.attr("width", x + 20)
+        }
+        if (defaultHeight < y) {
+            defaultHeight = y;
+            svgContainer.attr("height", y + 20)
+        }
+    }
+
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"></script>
 
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.3.js"></script>
 <script>
@@ -73,19 +127,56 @@
                 let msg = m.message; // The Payload
 
                 if (update) {
+                    // Create a new <p> element for the message text
                     let new_msg = document.createElement("p");
                     new_msg.style.cssText = 'color: #777; font-size: 0.7em;';
+                    // Make sure message is going to render as text (not object Object)
+                    let msg_text;
                     if (msg !== null && typeof msg === 'object') {
-                        msg = JSON.stringify(msg)
+                        msg_text = JSON.stringify(msg)
+                    } else {
+                        msg_text = msg
                     }
-                    new_msg.innerText = msg;
+
+                    // Add the text to the new element and append it to the correct div
+                    new_msg.innerText = msg_text;
                     let msg_element = document.getElementById(channelName);
                     msg_element.appendChild(new_msg);
 
-                    // Doesn't allow for scrolling up at all
+                    // Broken: doesn't allow for scrolling up at all...
                     let shouldScroll = msg_element.scrollHeight + msg_element.scrollTop >= msg_element.clientHeight;
                     if (shouldScroll) {
                         scrollToBottom(channelName);
+                    }
+
+                    // Update circle positions
+                    if (channelName === "located") {
+                        let x = msg[2][0];
+                        let y = msg[2][1];
+                        let r = msg[3]['avg_err'];
+                        c1.attr("cx", x).attr("cy", y).attr("r", 5).style("fill", "blue");
+                        c2.attr("cx", x).attr("cy", y).attr("r", r).style("fill", "steelBlue");
+
+                        updateSize(x, y, r);
+                    }
+                    // Add nodes that come up / broadcast position
+                    else if (channelName === "nodes") {
+                        svgContainer.select("#" + msg.name).remove();
+
+                        updateSize(msg.coords.x, msg.coords.y);
+
+                        let new_node = svgContainer.append("g");
+                        new_node.attr("id", msg.name)
+                            .attr("transform", function (d) {
+                                return "translate(" + [msg.coords.x, msg.coords.x] + ")";
+                            });
+
+                        let new_circle = new_node.append("circle");
+                        new_circle.attr("r", 3)
+                            .attr("fill", "black");
+
+                        let new_text = new_node.append("text").text(msg.name)
+                            .attr("x", -5).attr("y", 10).style("font-size", "0.6em");
                     }
                 }
             },
