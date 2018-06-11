@@ -1,22 +1,26 @@
 version: "3.6"
 
 services:
-  locator-flaskx64:
-    container_name: locator-flask-x64
+  flask:
+    container_name: flask-x64
     build:
       dockerfile: Dockerfile
+      target: flask
       context: .
       args:
         pub_key: "${pub_key}"
         sub_key: "${sub_key}"
-    image: bt-beacon/locator-flask:x64
+    ports:
+      - "5000:5000"
+    image: bt-beacon/flask:x64
 
-  locator-flask-arm32v7:
-    container_name: locator-flask-arm32v7
+  locator:
+    container_name: locator-x64
     build:
-      dockerfile: Dockerfile.arm32v7
+      dockerfile: Dockerfile
+      target: locator
       context: .
       args:
         pub_key: "${pub_key}"
         sub_key: "${sub_key}"
-    image: bt-beacon/locator-flask:arm32v7
+    image: bt-beacon/locator:x64

@@ -8,7 +8,10 @@ from pubnub.callbacks import SubscribeCallback
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-from app.src.trilateration import TrilaterationSolver
+try:
+    from app.src.trilateration import TrilaterationSolver
+except ModuleNotFoundError as e:
+    from trilateration import TrilaterationSolver
 
 
 class MaxLenDeque(deque):
@@ -155,15 +158,28 @@ class BeaconLocator(SubscribeCallback):
 
 
 if __name__ == '__main__':
+    import os
     import sys
 
-    if len(sys.argv) != 3:
+    if len(sys.argv) == 1:
+        try:
+            sys.argv.append(os.environ['PUB_KEY'])
+            sys.argv.append(os.environ['SUB_KEY'])
+        except KeyError:
+            print("Set the PUB_KEY and SUB_KEY arguments!")
+            print('-  export PUB_KEY="<pub_key_here>"')
+            print("Alternatively, run locate.py with those args, like:")
+            print("-  python locate.py <pub_key> <sub_key>")
+            quit()
+    elif len(sys.argv) != 3:
         print("Run locate.py with two arguments: ")
         print("-  pub_key: a PubNub publishing key.")
         print("-  sub_key: a PubNub subscription key.")
         print("It looks like: ")
         print("-  python locate.py <pub_key> <sub_key>")
         quit()
+
+    print(sys.argv)
 
     locator = BeaconLocator(sys.argv[1], sys.argv[2])
     locator.start()
