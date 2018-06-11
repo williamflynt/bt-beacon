@@ -27,7 +27,9 @@ ENTRYPOINT ["python", "locate.py"]
 #--- Flask App Webserver
 FROM locator as flask
 
+ARG pub_key
 ARG sub_key
+ENV PUB_KEY=${pub_key}
 ENV SUB_KEY=${sub_key}
 
 WORKDIR /opt/bt-beacon/app
