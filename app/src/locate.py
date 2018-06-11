@@ -1,5 +1,4 @@
 import dateutil.parser
-import math
 
 from collections import defaultdict, deque
 from datetime import timedelta
@@ -16,41 +15,6 @@ class MaxLenDeque(deque):
     def __init__(self):
         maxlen = 6
         super(MaxLenDeque, self).__init__(maxlen=maxlen)
-
-
-class RangeCallback(SubscribeCallback):
-    def __init__(self, pubnub):
-        self.pubnub = pubnub
-
-        self.n = 2  # Path loss exponent = 1.6-1.8 w/LOS to beacon indoors
-        self.tx_power = -69  # Transmit power in dBm
-
-    def _publish_callback(self, *args, **kwargs):
-        pass
-
-    def _publish_range(self, bt_addr, rssi, timestamp, distance, node):
-        message = [bt_addr, rssi, timestamp, distance, node]
-        self.pubnub.publish() \
-            .channel('ranged') \
-            .message(message) \
-            .should_store(True) \
-            .async(self._publish_callback)
-
-    def status(self, pubnub, status):
-        pass
-
-    def presence(self, pubnub, presence):
-        pass
-
-    def message(self, pubnub, msg):
-        message = msg.message
-        bt_addr = message[0]
-        bt_rssi = message[1]
-
-        distance = 10 ** ((self.tx_power - bt_rssi) / (10 * self.n))
-
-        # message[4] is timestamp in messages from 'raw_channel'
-        self._publish_range(bt_addr, bt_rssi, message[4], distance, message[5])
 
 
 class BeaconLocator(SubscribeCallback):
@@ -188,3 +152,18 @@ class BeaconLocator(SubscribeCallback):
 
     def stop(self):
         self.pubnub.unsubscribe_all()
+
+
+if __name__ == '__main__':
+    import sys
+
+    if len(sys.argv) != 3:
+        print("Run locate.py with two arguments: ")
+        print("-  pub_key: a PubNub publishing key.")
+        print("-  sub_key: a PubNub subscription key.")
+        print("It looks like: ")
+        print("-  python locate.py <pub_key> <sub_key>")
+        quit()
+
+    locator = BeaconLocator(sys.argv[1], sys.argv[2])
+    locator.start()

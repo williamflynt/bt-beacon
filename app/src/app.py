@@ -15,7 +15,7 @@ socketio = SocketIO(app, async_mode='eventlet')
 try:
     SUB_KEY = os.environ['SUB_KEY']
 except KeyError:
-    SUB_KEY = "sub-c-a94e45d2-5902-11e8-9b53-6e008aa3b186"
+    SUB_KEY = "demo"
 
 
 @app.route('/')
@@ -45,7 +45,6 @@ class Worker(object):
         """
         i = 0
         while self.switch:
-            # TODO: Get the scan results and package them
             message_list = ['message{}'.format(i) for i in range(i + 1)]
             self.socketio.emit('scan_results', message_list)
             i += 1
