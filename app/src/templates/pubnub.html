@@ -78,7 +78,7 @@
         document.getElementById("status").innerHTML = "Subscribing...";
 
         pubnub.subscribe({
-            channels: ['raw_channel', 'ranged', 'located'],
+            channels: ['nodes', 'raw_channel', 'ranged', 'located'],
         });
 
         document.getElementById("status").innerHTML = "Subscribed";

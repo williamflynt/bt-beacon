@@ -10,6 +10,7 @@ from pubnub.pubnub import PubNub
 
 from app.src.trilateration import TrilaterationSolver
 
+
 class MaxLenDeque(deque):
     def __init__(self):
         maxlen = 6
@@ -17,13 +18,16 @@ class MaxLenDeque(deque):
 
 
 class BeaconLocator(object):
-    def __init__(self, pub_key, sub_key, ):
+    def __init__(self, pub_key, sub_key):
         pnconfig = PNConfiguration()
         pnconfig.subscribe_key = sub_key
         pnconfig.publish_key = pub_key
         pnconfig.ssl = False
 
         self.pubnub = PubNub(pnconfig)
+        self.node_map = defaultdict(tuple)
+        self.known_nodes = []
+        self.get_nodes()
 
         # Holds messages from the 'ranged' topic
         self.message_log = defaultdict(MaxLenDeque)
@@ -36,6 +40,22 @@ class BeaconLocator(object):
 
         self.solver = TrilaterationSolver()
 
+    def get_nodes(self):
+        nodes_msgs = self.pubnub \
+            .history() \
+            .channel("nodes") \
+            .count(100).sync()
+        for message in nodes_msgs['messages']:
+            try:
+                node = message['name']
+                self.node_map[node] = (
+                    message["coords"]["x"], message["coords"]["y"]
+                )
+                if node not in self.known_nodes:
+                    self.known_nodes.append(node)
+            except KeyError as e:
+                pass
+
     def _publish_range(self, bt_addr, rssi, timestamp, distance, node):
         message = [bt_addr, rssi, timestamp, distance, node]
         self.pubnub.publish() \
@@ -44,7 +64,7 @@ class BeaconLocator(object):
             .should_store(True) \
             .async(self._publish_callback)
 
-    def _publish_coords(self, bt_addr, timestamp, coords, meta=None):
+    def _publish_beacon_coords(self, bt_addr, timestamp, coords, meta=None):
         if meta is None:
             meta = {}
         message = [bt_addr, timestamp, coords, meta]
@@ -73,6 +93,7 @@ class BeaconLocator(object):
         # Alternative
         # distance = 10 ^ ((self.tx_power - bt_rssi) / (10 * self.n))
 
+        # message[4] is timestamp in messages from 'raw_channel'
         self._publish_range(bt_addr, bt_rssi, message[4], distance, message[5])
         log_slot.appendleft(message)
 
@@ -84,17 +105,32 @@ class BeaconLocator(object):
         self._locate(log_slot, bt_addr, message[4], min_time)
 
     def _locate(self, log_slot, bt_addr, msg_timestamp, min_time):
-        # check stack of messages time constraints
+        # log_slot is a list of 'ranged' messages like:
+        # # [bt_addr, bt_rssi, timestamp, distance, nodename]
+        # check stack of messages for those within time constraints
         applicable_msgs = [msg for msg in log_slot
-                           if dateutil.parser.parse(msg[4]) >= min_time]
+                           if dateutil.parser.parse(msg[2]) >= min_time]
+
+        nodes = list(set([msg[4] for msg in applicable_msgs]))
+        for node in nodes:
+            if node not in self.known_nodes:
+                self.get_nodes()
+        locations, distances = zip(*[
+            (self.node_map[msg[4]], msg[3])
+            for msg in applicable_msgs
+            if msg[4] in self.known_nodes
+        ])
 
         # do best location possible w/ available nodes/raw messages
-        location = (0, 0)
-        meta = {"error": 0,
-                "nodes": 0}
+        result = self.solver.best_point(locations, distances)
+        coords = result['coords']
+        meta = {"avg_err": result['avg_err'],
+                "message_count": len(applicable_msgs),
+                "node_count": len(nodes),
+                "nodes": str(nodes)}
 
         # publish location (with error and/or other metadata if possible)
-        self._publish_coords(bt_addr, msg_timestamp, location, meta)
+        self._publish_beacon_coords(bt_addr, msg_timestamp, coords, meta)
 
     def start(self):
         self.pubnub.subscribe().channels('raw_channel') \

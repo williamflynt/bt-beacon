@@ -13,10 +13,19 @@ from datetime import datetime, timedelta
 from beacontools import BeaconScanner
 
 UTC = pytz.timezone('UTC')
-try:
-    NODE = os.environ['NODE_NAME']
-except KeyError:
-    NODE = 'UnknownNode'
+
+
+# try:
+#     NODE = os.environ['NODE_NAME']
+#     NODE_COORDS = (
+#         os.environ['NODE_X'], os.environ['NODE_Y']
+#     )
+# except KeyError as e:
+#     print('You must define three environment variables:')
+#     print('NODE   = The name of the node.')
+#     print('NODE_X = The x-coordinate of the node in meters.')
+#     print('NODE_Y = The x-coordinate of the node in meters.')
+#     quit()
 
 
 class ScanService(object):
@@ -83,6 +92,17 @@ class ScanService(object):
                 .async(self._publish_callback)
 
     def scan(self):
+        init_message = {"name": NODE,
+                        "coords": {
+                            "x": NODE_COORDS[0],
+                            "y": NODE_COORDS[1]
+                        }}
+        self.pubnub.publish() \
+            .channel('nodes') \
+            .message(init_message). \
+            should_store(True) \
+            .sync()
+        print("{} at coords {}".format(NODE, NODE_COORDS))
         self.scanner = BeaconScanner(self._publish)
         self.scanner.start()
 
@@ -91,11 +111,48 @@ class ScanService(object):
 
 
 if __name__ == "__main__":
+    """
+    Call scan.py like:
+      python scan.py pub_key sub_key
+    or
+      python scan.py pub_key sub_key publish
+    or
+      python scan.py pub_key sub_key NODE_NAME NODE_X NODE_Y [publish]
+    """
     import sys
 
-    if len(sys.argv) > 3:
-        publish = sys.argv[3]
-    else:
-        publish = True
+    publish = True
+
+    if len(sys.argv) < 3:
+        print("Call scan.py like:")
+        print("  python scan.py pub_key sub_key [publish]")
+        print("or")
+        print("  python scan.py pub_key sub_key NODE_NAME NODE_X NODE_Y [publish]")
+        quit()
+    elif len(sys.argv) < 6:
+        try:
+            NODE = os.environ['NODE_NAME']
+            NODE_COORDS = (
+                os.environ['NODE_X'], os.environ['NODE_Y']
+            )
+        except KeyError as e:
+            print('Error: Missing NODE_NAME NODE_X NODE_Y from command.')
+            print('You can also define three environment variables:')
+            print('NODE   = The name of the node.')
+            print('NODE_X = The x-coordinate of the node in meters.')
+            print('NODE_Y = The x-coordinate of the node in meters.')
+            quit()
+    elif len(sys.argv) == 6:
+        NODE = sys.argv[3]
+        NODE_COORDS = (
+            float(sys.argv[4]), float(sys.argv[5])
+        )
+    elif len(sys.argv) > 6:
+        NODE = sys.argv[3]
+        NODE_COORDS = (
+            float(sys.argv[4]), float(sys.argv[5])
+        )
+        publish = sys.argv[6]
+
     scanner = ScanService(sys.argv[1], sys.argv[2], publish)
     scanner.scan()
