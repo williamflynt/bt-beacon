@@ -41,7 +41,16 @@ class TrilaterationSolver(object):
                                                      test_point[1],
                                                      location[0],
                                                      location[1])
-            mse += math.pow(distance_calculated - distance, 2.0)
+            calced_error = distance_calculated - distance
+            # primitive attempt at weighting "near" results
+            # ex: distance is 6.5m
+            # error_mod is 1.5
+            # calced_error is multiplied by (1 - .015)
+            # calced_error = 0.985 * calced_error
+            error_mod = max(0, distance-2.0)
+            calced_error *= (1-(error_mod/100.0))
+
+            mse += math.pow(calced_error, 2.0)
             location_count += 1
         return mse / location_count
 

@@ -76,6 +76,7 @@ class ScanService(object):
             pass
         else:
             now = datetime.now(UTC)
+            # The actual message body
             message = [bt_addr,
                        rssi,
                        "{}".format(packet),

@@ -11,3 +11,5 @@ sudo setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python3))
 
 pip3 install -r app/requirements.scan.txt
 chmod +x ble_scan.sh
+echo "To scan run:"
+echo "-   ./ble_scan.sh"

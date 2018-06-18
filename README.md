@@ -18,13 +18,41 @@ The server node also runs a small webserver for node configuration, and real tim
 These instructions will give you a copy of the project up and running on your local machine for development and testing
 purposes. See deployment for notes on how to deploy the project on a live system.
 
+#### Raspberry Pi Setup
+
+You need to make sure ssh and wifi are enabled. Some files and instructions are in the `raspberry` directory.
+
+Also set up each Pi to have a unique hostname, and enable SSH using `sudo raspi-config`.
+
+Create your development directory:
+~~~
+cd /opt
+sudo mkdir bt-beacon && sudo chown pi:pi bt-beacon
+~~~
+
+After uploading the files to the Pi, make the setup script executable:
+~~~
+cd /opt/bt-beacon
+chmod +x ./ble_scan_setup.sh
+~~~
+
+Finally, add your pub/sub keys:
+~~~
+export PUB_KEY="pubkey"
+export SUB_KEY="subkey"
+echo "export PUB_KEY=${PUB_KEY}" >> ~/.bashrc
+echo "export SUB_KEY=${SUB_KEY}" >> ~/.bashrc
+~~~
+
+And set up your Pi to scan with `./ble_scan.sh`.
+
 ### Requirements
 
 This project is tested on Raspbian Stretch kernel 4.1.4 (2018-04-18), and will probably work on most Linux versions with
 Bluetooth Low Energy support (ex: Ubuntu Core). It runs on Raspberry Pi 3B+.
 
 You also need Python 3.x - some functionality may not work with Python 2. This project was created and tested with 
-Python 3.6.
+Python 3.5 and Python 3.6.
 
 Finally, you will need Docker CE. You can find out more at the [Docker website](https://www.docker.com).
 

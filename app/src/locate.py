@@ -2,6 +2,7 @@ import dateutil.parser
 
 from collections import defaultdict, deque
 from datetime import timedelta
+from statistics import mean, harmonic_mean as hmean
 
 from pubnub.callbacks import SubscribeCallback
 # from pubnub.enums import PNStatusCategory
@@ -15,8 +16,7 @@ except ModuleNotFoundError as e:
 
 
 class MaxLenDeque(deque):
-    def __init__(self):
-        maxlen = 6
+    def __init__(self, maxlen=30):
         super(MaxLenDeque, self).__init__(maxlen=maxlen)
 
 
@@ -33,11 +33,19 @@ class BeaconLocator(SubscribeCallback):
         self.get_nodes()
 
         # Holds messages from the 'ranged' topic
-        self.message_log = defaultdict(MaxLenDeque)
+        self.raw_log = defaultdict(MaxLenDeque)
+        self.ranged_log = defaultdict(MaxLenDeque)
         self.max_time_diff = timedelta(seconds=5)
 
-        self.n = 1.6  # Path loss exponent = 1.6-1.8 w/LOS to beacon indoors
-        self.tx_power = -69.5  # Transmit power in dBm
+        # n_matrix = {
+        #     "indoors": 3.7,
+        #     "free_air": 2,
+        # }
+        # beacon_matrix = {
+        #     "bluecharm": -59.8,
+        # }
+        self.n = 3.7  # Path loss exponent = 1.6-1.8 w/LOS to beacon indoors
+        self.measured_rssi = -59.8  # Beacon-specific measured RSSI @ 1m
 
         self.solver = TrilaterationSolver()
 
@@ -66,7 +74,7 @@ class BeaconLocator(SubscribeCallback):
             .should_store(True) \
             .async(self._publish_callback)
 
-    def _publish_beacon_coords(self, bt_addr, timestamp, coords, meta=None):
+    def _publish_location(self, bt_addr, timestamp, coords, meta=None):
         if meta is None:
             meta = {}
         message = [bt_addr, timestamp, coords, meta]
@@ -79,48 +87,102 @@ class BeaconLocator(SubscribeCallback):
     def _publish_callback(self, result, status):
         # Check whether request successfully completed or not
         # Try to handle errors intelligently...
-        pass
+        pass  # Pretty intelligent, huh?
 
     def _range(self, message, channel):
         bt_addr = message[0]
-        bt_rssi = message[1]
-        log_slot = self.message_log[bt_addr]
+        node_name = message[5]
+        raw_log_slot = self.raw_log[bt_addr]
+        ranged_log_slot = self.ranged_log[bt_addr]
 
-        # Calculate distance from bt_rssi, assuming tx_power and n
-        distance = 10 ** ((self.tx_power - bt_rssi) / (10 * self.n))
-
-        # message[4] is timestamp in messages from 'raw_channel'
-        ranged_message = [bt_addr, bt_rssi, message[4], distance, message[5]]
-        self._publish_range(*ranged_message)
-        log_slot.appendleft(ranged_message)
-
+        raw_log_slot.appendleft(message)
         # Find earliest acceptable time to consider in location
         msg_dt = dateutil.parser.parse(message[4])
         min_time = msg_dt - self.max_time_diff
+        # Find average RSSI for the node over the allowable time period and
+        #  use this average value for range calculations for dampening
+        # applicable_rssi = [
+        #     msg[1] for msg in raw_log_slot
+        #     if dateutil.parser.parse(msg[4]) >= min_time
+        #     and msg[5] == node_name  # matching node_name
+        # ]
+        # avg_rssi = mean(applicable_rssi)
+
+        applicable_rssi = [
+            -msg[1] for msg in raw_log_slot
+            if dateutil.parser.parse(msg[4]) >= min_time
+               and msg[5] == node_name  # matching node_name
+        ]
+        # harmonic mean (vs arithmatic mean) dampens the wild swings
+        avg_rssi = -hmean(applicable_rssi)
+
+        # print(applicable_rssi)
+        # print("{}: {}".format(node_name, avg_rssi))
+
+        # Calculate distance from bt_rssi, assuming tx_power and n
+        distance = 10 ** ((self.measured_rssi - avg_rssi) / (10 * self.n))
+
+        # message[4] is timestamp in messages from 'raw_channel'
+        # message[5] is node name in messages from 'raw_channel'
+        ranged_message = [bt_addr, avg_rssi, message[4], distance, message[5]]
+        self._publish_range(*ranged_message)
+        ranged_log_slot.appendleft(ranged_message)
 
         # Do location and publish if appropriate
-        self._locate(log_slot, bt_addr, message[4], min_time)
+        self._locate(ranged_log_slot, bt_addr, message[4], min_time)
 
-    def _locate(self, log_slot, bt_addr, msg_timestamp, min_time):
+    def _locate(self, ranged_log_slot, bt_addr, msg_timestamp, min_time):
         # log_slot is a list of 'ranged' messages like:
         # # [bt_addr, bt_rssi, timestamp, distance, nodename]
         # check stack of messages for those within time constraints
-        applicable_msgs = [msg for msg in log_slot
+        applicable_msgs = [msg for msg in ranged_log_slot
                            if dateutil.parser.parse(msg[2]) >= min_time]
 
         nodes = list(set([msg[4] for msg in applicable_msgs]))
         node_count = len(nodes)
+        for node in nodes:
+            if node not in self.known_nodes:
+                self.get_nodes()
+
         if node_count > 1:
-            for node in nodes:
-                if node not in self.known_nodes:
-                    self.get_nodes()
+            # Get the average range for each node
+            averaged = defaultdict(list)
+            for msg in applicable_msgs:
+                averaged[msg[4]].append(msg)
+            use_these = []
+            # Apply the average to all messages from the node
+            for nodename, msg_list in averaged.items():
+                observed = [msg[3] for msg in msg_list]
+                for msg in msg_list:
+                    msg[3] = mean(observed)
+                use_these.extend(msg_list)
             locations, distances = zip(*[
                 (self.node_map[msg[4]], msg[3])
-                for msg in applicable_msgs
+                for msg in use_these
                 if msg[4] in self.known_nodes
             ])
 
-            # do best location possible w/ available nodes/raw messages
+            # # Doesn't use any average range calculation,
+            # #  just the most recent one reported for node.
+            # latest = defaultdict(bool)
+            # for msg in applicable_msgs:
+            #     bt_addr = msg[4]
+            #     msg_dt = dateutil.parser.parse(msg[2])
+            #     if not latest[bt_addr] or dateutil.parser.parse(latest[bt_addr][2]) < msg_dt:
+            #         latest[bt_addr] = msg
+            # use_these = [v for k, v in latest.items() if v]
+            # locations, distances = zip(*[
+            #     (self.node_map[msg[4]], msg[3])
+            #     for msg in use_these
+            #     if msg[4] in self.known_nodes
+            # ])
+
+            # print("***")
+            # print(use_these)
+            # print(locations)
+            # print(distances)
+
+            # do best location possible w/ available nodes/messages
             result = self.solver.best_point(locations, distances)
             coords = result['coords']
             meta = {"avg_err": result['avg_err'],
@@ -129,7 +191,7 @@ class BeaconLocator(SubscribeCallback):
                     "nodes": str(nodes)}
 
             # publish location (with error and/or other metadata if possible)
-            self._publish_beacon_coords(bt_addr, msg_timestamp, coords, meta)
+            self._publish_location(bt_addr, msg_timestamp, coords, meta)
 
     def status(self, pubnub, status):
         pass

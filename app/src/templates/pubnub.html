@@ -12,14 +12,45 @@
         <small id="category"></small>
     </h3>
 
-    <button id="toggle" onclick="toggleUpdate()" type="button" class="success button">Pause</button>
+
+    <div class="grid-x grid-margin-x">
+        <div class="cell small-4">
+            <form>
+                <label for="allowed-error">Max Allowed Error</label>
+                <div class="input-group">
+                    <input class="input-group-field" id="allowed-error" type="number">
+                    <div class="input-group-button">
+                        <button type="button" class="button"
+                                onclick="setAllowedError(document.getElementById('allowed-error').value)">
+                            Set
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class="grid-x grid-margin-x">
         <div id="svgSpace" class="cell auto" style="border: 1px solid dimgray;"></div>
+
+        <div class="cell small-2">
+            <button id="toggle" onclick="toggleUpdate()" type="button" class="success button">Pause</button>
+        </div>
     </div>
 
-    <h5>Raw Messages</h5>
+    <div class="grid-x grid-margin-x">
+        <h5>Performance</h5>
+        <div id="rangeSvg" class="cell auto"></div>
+    </div>
+
+    <div class="grid-x grid-margin-x" style="margin-top: 25px;">
+        <div class="cell small-3">
+            <h5>Raw Messages</h5>
+        </div>
+    </div>
+
     <hr/>
+
     <div class="grid-x grid-margin-x" id="messages" data-sub-key="{{ sub_key }}">
         <div id="ranged_ctr" class="cell auto">
             <h5>ranged</h5>
@@ -42,162 +73,21 @@
             <div id="nodes" style="height: 300px; overflow-y: scroll;"></div>
         </div>
     </div>
+
+    <div class="grid-x grid-margin-x" id="footer" style="margin-top: 25px;">
+        <div class="cell auto shadow"><span style="font-size: 0.7em; color: dimgray">(C) 2018 Starling IoT</span></div>
+    </div>
 </div>
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-
-<script src="https://d3js.org/d3.v5.min.js"></script>
-<script>
-    let defaultWidth = 10;
-    let defaultHeight = 10;
-
-    let svgContainer = d3.select("#svgSpace").append("svg")
-        .attr("width", defaultWidth)
-        .attr("height", defaultHeight)
-        .style("margin", "10px");
-
-    let c1 = svgContainer
-        .append("circle");
-    let c2 = svgContainer
-        .append("circle");
-
-    c2.attr("cx", svgContainer.attr("width") / 2)
-        .attr("cy", svgContainer.attr("height") / 2)
-        .attr("r", 20)
-        .style("fill", "gray")
-        .style("opacity", 0.5);
-
-    c1.attr("cx", svgContainer.attr("width") / 2)
-        .attr("cy", svgContainer.attr("height") / 2)
-        .attr("r", 5)
-        .style("fill", "gray");
-
-    function updateSize(x, y, offset = 0) {
-        x = x + offset;
-        y = y + offset;
-
-        if (defaultWidth < x) {
-            defaultWidth = x;
-            svgContainer.attr("width", x + 20)
-        }
-        if (defaultHeight < y) {
-            defaultHeight = y;
-            svgContainer.attr("height", y + 20)
-        }
-    }
-
-</script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"></script>
-
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.3.js"></script>
-<script>
-    const messages = document.getElementById("messages");
-    const sub_key = messages.getAttribute("data-sub-key");
-    let update = true;
+<script src="https://d3js.org/d3.v5.min.js"></script>
 
-    let pubnub = new PubNub({
-        subscribeKey: sub_key,
-        ssl: true
-    });
-
-    function scrollToBottom(divId) {
-        let element = document.getElementById(divId);
-        element.scrollTop = element.scrollHeight;
-    }
-
-    function toggleUpdate() {
-        update = !update;
-        if (update) {
-            document.getElementById("toggle").innerText = "Pause"
-        } else {
-            document.getElementById("toggle").innerText = "Play"
-        }
-    }
-
-    window.onload = function () {
-        document.getElementById("status").innerHTML = "Creating Listener...";
-
-        pubnub.addListener({
-            message: function (m) {
-                let channelName = m.channel; // The channel for which the message belongs
-                let channelGroup = m.subscription; // The channel group or wildcard subscription match (if exists)
-                let pubTT = m.timetoken; // Publish timetoken
-                let msg = m.message; // The Payload
-
-                if (update) {
-                    // Create a new <p> element for the message text
-                    let new_msg = document.createElement("p");
-                    new_msg.style.cssText = 'color: #777; font-size: 0.7em;';
-                    // Make sure message is going to render as text (not object Object)
-                    let msg_text;
-                    if (msg !== null && typeof msg === 'object') {
-                        msg_text = JSON.stringify(msg)
-                    } else {
-                        msg_text = msg
-                    }
-
-                    // Add the text to the new element and append it to the correct div
-                    new_msg.innerText = msg_text;
-                    let msg_element = document.getElementById(channelName);
-                    msg_element.appendChild(new_msg);
-
-                    // Broken: doesn't allow for scrolling up at all...
-                    let shouldScroll = msg_element.scrollHeight + msg_element.scrollTop >= msg_element.clientHeight;
-                    if (shouldScroll) {
-                        scrollToBottom(channelName);
-                    }
-
-                    // Update circle positions
-                    if (channelName === "located") {
-                        let x = msg[2][0];
-                        let y = msg[2][1];
-                        let r = msg[3]['avg_err'];
-                        c1.attr("cx", x).attr("cy", y).attr("r", 5).style("fill", "blue");
-                        c2.attr("cx", x).attr("cy", y).attr("r", r).style("fill", "steelBlue");
-
-                        updateSize(x, y, r);
-                    }
-                    // Add nodes that come up / broadcast position
-                    else if (channelName === "nodes") {
-                        svgContainer.select("#" + msg.name).remove();
-
-                        updateSize(msg.coords.x, msg.coords.y);
-
-                        let new_node = svgContainer.append("g");
-                        new_node.attr("id", msg.name)
-                            .attr("transform", function (d) {
-                                return "translate(" + [msg.coords.x, msg.coords.x] + ")";
-                            });
-
-                        let new_circle = new_node.append("circle");
-                        new_circle.attr("r", 3)
-                            .attr("fill", "black");
-
-                        let new_text = new_node.append("text").text(msg.name)
-                            .attr("x", -5).attr("y", 10).style("font-size", "0.6em");
-                    }
-                }
-            },
-            status: function (s) {
-                let affectedChannelGroups = s.affectedChannelGroups;
-                let affectedChannels = s.affectedChannels;
-                let category = s.category;
-                let operation = s.operation;
-                document.getElementById("category").innerHTML = category;
-            }
-        });
-
-        document.getElementById("status").innerHTML = "Subscribing...";
-
-        pubnub.subscribe({
-            channels: ['nodes', 'raw_channel', 'ranged', 'located'],
-        });
-
-        document.getElementById("status").innerHTML = "Subscribed";
-    }
-</script>
+<script src="{{ url_for('static', filename='position-chart.js')}}"></script>
+<script src="{{ url_for('static', filename='range-chart.js')}}"></script>
+<script src="{{ url_for('static', filename='main.js')}}"></script>
 
 </body>
 </html>
