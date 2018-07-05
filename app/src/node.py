@@ -1,7 +1,10 @@
 import datetime
 import logging
 import threading
+import time
 import uuid
+
+from timeit import default_timer as timer
 
 try:
     import app.src.gps as gps
@@ -41,8 +44,20 @@ class Node(threading.Thread):
         logging.info("Starting GPS service")
         self.gps_svc.start()
         # Get node coordinates for the scan service as needed here
-        # # Wait for fix or a set of fixes
+        logging.info("Getting the first GPS fix")
+        # # Wait for fix or a set of fixes w/ a max timeout
+        timeout = 10
+        clock = timer()
+        while True:
+            time.sleep(0.5)
+            if timer() - clock > timeout:
+                logging.info("GPS fix timeout - moving on")
+                break
+            elif self.gps_svc.latest_fix:
+                logging.info("GPS fix acquired")
+                break
         # # Do math to find distance from a known anchor point
+        pass
 
         logging.info("Setting up BLE scanning service")
         self.scan_svc = scan.ScanService(pub_key, sub_key, not debug, NODE, NODE_COORDS)
@@ -53,7 +68,6 @@ class Node(threading.Thread):
 
     def run(self):
         # Start a clock and publish a message every X seconds
-        import time
         tz = datetime.timezone(datetime.timedelta(0))
         while self.switch:
             if self.debug:
@@ -71,7 +85,7 @@ class Node(threading.Thread):
                     "timestamp": datetime.datetime.now(tz=tz),
                     "location": self.gps_svc.get_latest_fix(),
                     "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
-                                "device_count": len(msgs.keys()),
+                                "devices": msgs.keys(),
                                 "raw": msgs},
                     "tlm": {}
                 })
