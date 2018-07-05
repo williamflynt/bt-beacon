@@ -162,21 +162,6 @@ class BeaconLocator(SubscribeCallback):
                 if msg[4] in self.known_nodes
             ])
 
-            # # Doesn't use any average range calculation,
-            # #  just the most recent one reported for node.
-            # latest = defaultdict(bool)
-            # for msg in applicable_msgs:
-            #     bt_addr = msg[4]
-            #     msg_dt = dateutil.parser.parse(msg[2])
-            #     if not latest[bt_addr] or dateutil.parser.parse(latest[bt_addr][2]) < msg_dt:
-            #         latest[bt_addr] = msg
-            # use_these = [v for k, v in latest.items() if v]
-            # locations, distances = zip(*[
-            #     (self.node_map[msg[4]], msg[3])
-            #     for msg in use_these
-            #     if msg[4] in self.known_nodes
-            # ])
-
             # print("***")
             # print(use_these)
             # print(locations)

@@ -77,7 +77,7 @@ def on_end(*args, **kwargs):
 def on_begin(*args, **kwargs):
     """begin the scan loop"""
     emit('started')
-    # notice that the method is not called - don't put braces after method name
+    # notice that the method "do_work" is not called - don't put braces after method name
     socketio.start_background_task(target=worker.do_work)
 
 

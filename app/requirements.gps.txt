@@ -1,1 +1,4 @@
-git+https://github.com/williamflynt/pyUblox.git
+pynmea2==1.*
+
+# Stolen from mayeranalytics in an incomplete state
+git+https://github.com/williamflynt/pyUBX.git

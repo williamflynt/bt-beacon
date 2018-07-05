@@ -120,3 +120,22 @@ def test_plot():
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.viridis)
 
     plt.show()
+
+
+def test_ubx(devpath="/dev/ttyACM0", autodown=True):
+    import pyubx
+    import serial
+
+    from app.src.gps import CoordinateService
+
+    # manager = pyubx.Manager(
+    #     serial.Serial(devpath)
+    # )
+    manager = CoordinateService(serial.Serial(devpath))
+
+    manager.start()
+    if autodown:
+        time.sleep(5)
+        manager.shutdown()
+
+    return manager

@@ -6,33 +6,25 @@ import pytz
 from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
-from time import sleep
-
+from collections import defaultdict
 from datetime import datetime, timedelta
+from time import sleep
 
 from beacontools import BeaconScanner
 
 UTC = pytz.timezone('UTC')
 
 
-# try:
-#     NODE = os.environ['NODE_NAME']
-#     NODE_COORDS = (
-#         os.environ['NODE_X'], os.environ['NODE_Y']
-#     )
-# except KeyError as e:
-#     print('You must define three environment variables:')
-#     print('NODE   = The name of the node.')
-#     print('NODE_X = The x-coordinate of the node in meters.')
-#     print('NODE_Y = The x-coordinate of the node in meters.')
-#     quit()
-
-
 class ScanService(object):
-    def __init__(self, pub_key, sub_key, publish=True):
+    def __init__(self, pub_key, sub_key, publish=True, node_name=None, node_coords=(0, 0)):
         self.publish = publish
+        self.node_name = node_name
+        self.node_coords = node_coords
         self.msg_queue = []
         self.scanner = None
+
+        # For tracking beacons in view of scanner over time
+        self.in_view = []
 
         pnconfig = PNConfiguration()
         pnconfig.subscribe_key = sub_key
@@ -71,18 +63,31 @@ class ScanService(object):
                 .message(message) \
                 .async(self._publish_callback)
 
-    def _publish(self, bt_addr, rssi, packet, additional_info):
+    def _on_receive(self, bt_addr, rssi, packet, additional_info):
+        now = datetime.now(UTC)
+
+        # Running log of the last message from each beacon seen since start
+        # of this service.
+        self.in_view.append(
+            {
+                'device_id': bt_addr,
+                'rssi': rssi,
+                'message': packet,
+                'time': now,
+                'status': 'unpublished'
+            }
+        )
+
         if not self.publish:
             pass
         else:
-            now = datetime.now(UTC)
             # The actual message body
             message = [bt_addr,
                        rssi,
                        "{}".format(packet),
                        "{}".format(additional_info),
                        now.isoformat(),
-                       NODE]
+                       self.node_name]
             retry_time = now + timedelta(seconds=5)
             self.msg_queue.append((message, now, retry_time))
 
@@ -92,19 +97,35 @@ class ScanService(object):
                 .should_store(True) \
                 .async(self._publish_callback)
 
+    def retrieve_in_view(self, reset=False):
+        temp_msgs = defaultdict(list)
+        for msg in self.in_view:
+            device_id = msg['device_id']
+            temp_msgs[device_id].append(msg)
+            msg['status'] = 'published'
+        if reset:
+            self.reset_in_view()
+        return temp_msgs
+
+    def reset_in_view(self, hard=False):
+        if hard:
+            self.in_view = []
+        else:
+            self.in_view = [msg for msg in self.in_view if msg['status'] == 'unpublished']
+
     def scan(self):
-        init_message = {"name": NODE,
+        init_message = {"name": self.node_name,
                         "coords": {
-                            "x": NODE_COORDS[0],
-                            "y": NODE_COORDS[1]
+                            "x": self.node_coords[0],
+                            "y": self.node_coords[1]
                         }}
         self.pubnub.publish() \
             .channel('nodes') \
             .message(init_message) \
             .should_store(True) \
             .sync()
-        print("{} at coords {}".format(NODE, NODE_COORDS))
-        self.scanner = BeaconScanner(self._publish)
+        # print("{} at coords {}".format(self.node_name, self.node_coords))
+        self.scanner = BeaconScanner(self._on_receive)
         self.scanner.start()
 
     def stop(self):
@@ -155,5 +176,5 @@ if __name__ == "__main__":
         )
         publish = sys.argv[6]
 
-    scanner = ScanService(sys.argv[1], sys.argv[2], publish)
+    scanner = ScanService(sys.argv[1], sys.argv[2], publish, NODE, NODE_COORDS)
     scanner.scan()

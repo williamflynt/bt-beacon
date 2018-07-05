@@ -1,0 +1,4 @@
+-r requirements.scan.txt
+-r requirements.flask.txt
+-r requirements.locate.txt
+-r requirements.gps.txt
