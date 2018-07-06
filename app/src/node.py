@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 import threading
 import time
@@ -39,7 +38,7 @@ class Node(threading.Thread):
         self.debug = debug
         # Set up logging to file if debug is False
         if not debug:
-            logging.basicConfig(filename='node.log', level=logging.WARNING)
+            logging.basicConfig(filename='node.log', level=logging.INFO)
         else:
             logging.basicConfig(level=logging.DEBUG)
 
@@ -104,20 +103,21 @@ class Node(threading.Thread):
 
     def _publish_callback(self, result, status):
         # TODO
+        pass
         # Check whether request successfully completed or not
-        s = None
-        if not status.is_error():
-            s = "No error"
+        # s = None
+        # if not status.is_error():
+            # s = "No error"
             # del self.msg_queue[0]  # Message successfully published to specified channel.
-        elif status.category == PNStatusCategory.PNAccessDeniedCategory:
-            s = "Access Denied"
+        # elif status.category == PNStatusCategory.PNAccessDeniedCategory:
+            # s = "Access Denied"
             # del self.msg_queue[0]
-        elif status.category == PNStatusCategory.PNBadRequestCategory:
-            s = "Bad Request"
+        # elif status.category == PNStatusCategory.PNBadRequestCategory:
+            # s = "Bad Request"
             # # Maybe bad keys, or an SDK error
             # del self.msg_queue[0]
-        elif status.category == PNStatusCategory.PNTimeoutCategory:
-            s = "Timeout"
+        # elif status.category == PNStatusCategory.PNTimeoutCategory:
+            # s = "Timeout"
             # # Republish with exponential backoff
             # msg_tuple = self.msg_queue[0]
             # message = msg_tuple[0]
@@ -137,7 +137,6 @@ class Node(threading.Thread):
             #     .channel('raw_channel') \
             #     .message(message) \
             #     .async(self._publish_callback)
-        print(s)
 
     def _publish(self):
         if not self.debug:

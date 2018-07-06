@@ -33,7 +33,7 @@ ENV PUB_KEY=${pub_key}
 ENV SUB_KEY=${sub_key}
 
 WORKDIR /opt/bt-beacon/app
-RUN pip install -r requirements.flask.txt
+RUN pip install -r requirements.web.txt
 
 EXPOSE 5000
 WORKDIR /opt/bt-beacon/app/src
