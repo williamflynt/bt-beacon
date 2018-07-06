@@ -28,7 +28,7 @@ class CoordinateService(Manager):
                 self.latest_fix.latitude,
                 self.latest_fix.longitude,
                 self.latest_fix.altitude,
-                self.latest_fix.timestamp
+                self.latest_fix.timestamp.isoformat()
             )
         else:
             return 0

@@ -70,11 +70,11 @@ class ScanService(object):
         # of this service.
         self.in_view.append(
             {
-                'device_id': bt_addr,
-                'rssi': rssi,
-                'message': packet,
-                'time': now,
-                'status': 'unpublished'
+                "device_id": bt_addr,
+                "rssi": rssi,
+                "message": "{}".format(packet),
+                "time": now.isoformat(),
+                "status": "unpublished"
             }
         )
 
@@ -102,7 +102,7 @@ class ScanService(object):
         for msg in self.in_view:
             device_id = msg['device_id']
             temp_msgs[device_id].append(msg)
-            msg['status'] = 'published'
+            msg['status'] = "published"
         if reset:
             self.reset_in_view()
         return temp_msgs

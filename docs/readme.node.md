@@ -33,14 +33,14 @@ For now, clone the repo. Then:
 
 ### Usage
 
-You can test your GPS and BLE scanner by using a basic testing node. It doesn't publish anything to PubNub.
-In your Python terminal:
+You can test your GPS and BLE scanner by using a basic testing node. It doesn't publish anything to PubNub,
+but it will connect. In your Python terminal:
 
 ~~~pythonstub
 # Where /dev/ttyACM0 is your GPS device
 from time import sleep
 from app.src.node import *
-node = Node('/dev/ttyACM0', 'demo', "demo", 3, True)
+node = Node('/dev/ttyACM0', pub_key='demo', sub_key="demo", interval=3, debug=True)
 node.start()
 sleep(5)
 node.terminate()
@@ -50,12 +50,11 @@ If that doesn't work, common errors are not setting GPS permissions, Bluetooth i
 or Bluetooth `setcap` didn't work/not accomplished.
 
 
-For an actual node:
+For an actual node, we can enter the keys on the command line, or provide them in the initial command like before.
+The big difference as that we won't create the node with `debug=True`:
 
 ~~~python
-# Optionally pass interval (integer - time between messages to PubNub)
-# You'll want to use your actual publish/subscribe keys here
 from app.src.node import Node
-node = Node('/dev/ttyACM0', 'demo', "demo")
+node = Node('/dev/ttyACM0')
 node.start()
 ~~~
