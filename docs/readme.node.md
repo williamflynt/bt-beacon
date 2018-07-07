@@ -58,3 +58,10 @@ from app.src.node import Node
 node = Node('/dev/ttyACM0')
 node.start()
 ~~~
+
+You can also use `node.py` directly, like:
+
+~~~bash
+# The & at the end runs the thing detached! Doesn't work for debug...
+python node.py /dev/ttyACM0 --pub demo --sub demo &
+~~~

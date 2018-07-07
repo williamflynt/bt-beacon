@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from time import sleep
 
 from beacontools import BeaconScanner
+from beacontools.scanner import Monitor
 
 UTC = pytz.timezone('UTC')
 
@@ -125,11 +126,12 @@ class ScanService(object):
             .should_store(True) \
             .sync()
         # print("{} at coords {}".format(self.node_name, self.node_coords))
-        self.scanner = BeaconScanner(self._on_receive)
+        self.scanner = Monitor(self._on_receive, 0, None, None)
+        # self.scanner = BeaconScanner(self._on_receive)
         self.scanner.start()
 
     def stop(self):
-        self.scanner.stop()
+        self.scanner.terminate()
 
 
 if __name__ == "__main__":

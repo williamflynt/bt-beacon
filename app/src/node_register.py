@@ -1,12 +1,16 @@
+import os
 import requests
+import subprocess
+import sys
 import uuid
 
-import bottle
 from bottle import route, run, template, request
 
 INTERNAL_POST = "/getkeys"
 # POST_TO = "https://flock.starlingiot.com/register/{}".format(str(uuid.getnode()))
 POST_TO = "http://localhost:8000/nodes/register/{}".format(str(uuid.getnode()))
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 @route('/')
 def index():
@@ -50,17 +54,34 @@ def getkeys():
     keys = content.keys()
 
     if len(keys) == 2 and "pub" in keys and "sub" in keys:
-        # Write to env / file / service
+        pub = content['pub']
+        sub = content['sub']
+        with open(os.path.join(FILE_DIR, 'pubnub.env'), 'wb') as envfile:
+            envfile.writelines([bytes(s.encode('utf-8')) for s in [
+                "PUB_KEY={}".format(pub),
+                "\n",
+                "SUB_KEY={}".format(sub)
+            ]])
+        os.environ['PUB_KEY'] = pub
+        os.environ['SUB_KEY'] = sub
+
         # Start the node
-        # Kill bottle (also do this check on startup)
+        script_path = os.path.join(FILE_DIR, "node.py")
+        subprocess.Popen(["nohup",
+                          os.path.join(FILE_DIR, "..", "..", "venv", "bin", "python"),
+                          script_path, "/dev/ttyACM0", "--pub", pub, "--sub", sub])
+
+        # TODO: Kill bottle (also do this check on startup)
+        # https://stackoverflow.com/questions/11282218/bottle-web-framework-how-to-stop
+
         return template(
             """
             <html>
             <body>
-            {}
+                <h1>Success</h1>
             </body>
             </html>
-            """.format(content)
+            """
         )
 
 

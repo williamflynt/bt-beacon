@@ -1,5 +1,8 @@
+import argparse
 import datetime
 import logging
+import os
+import sys
 import threading
 import time
 import uuid
@@ -36,6 +39,9 @@ class Node(threading.Thread):
         self.tz = datetime.timezone(datetime.timedelta(0))
 
         self.debug = debug
+        if self.debug:
+            print("*** Debug messages are not complete messages.")
+
         # Set up logging to file if debug is False
         if not debug:
             logging.basicConfig(filename='node.log', level=logging.INFO)
@@ -75,6 +81,7 @@ class Node(threading.Thread):
 
         logging.info("Setting up GPS service")
         self.gps_svc = gps.CoordinateService(gps_device)
+        self.gps_svc.daemon = True
         logging.info("Starting GPS service")
         self.gps_svc.start()
         # Get node coordinates for the scan service as needed here
@@ -93,13 +100,14 @@ class Node(threading.Thread):
         # # Do math to find distance from a known anchor point
         pass
 
-        logging.info("Setting up BLE scanning service")
+        logging.info("Setting up BLE scanning service")  # Probably time to do this direct from Monitor
         self.scan_svc = scan.ScanService(pub_key, sub_key, not debug, NODE, NODE_COORDS)
         logging.info("Starting BLE scanner")
         self.scan_svc.scan()
+        logging.info("BLE scanner started")
 
         logging.info("Node initialized")
-        time.sleep(0.1)
+        time.sleep(1)
 
     def _publish_callback(self, result, status):
         # TODO
@@ -107,65 +115,64 @@ class Node(threading.Thread):
         # Check whether request successfully completed or not
         # s = None
         # if not status.is_error():
-            # s = "No error"
-            # del self.msg_queue[0]  # Message successfully published to specified channel.
+        # s = "No error"
+        # del self.msg_queue[0]  # Message successfully published to specified channel.
         # elif status.category == PNStatusCategory.PNAccessDeniedCategory:
-            # RESTART BOTTLE FOR CONFIG
-            # s = "Access Denied"
-            # del self.msg_queue[0]
+        # RESTART BOTTLE FOR CONFIG IF STOPPED
+        # s = "Access Denied"
+        # del self.msg_queue[0]
         # elif status.category == PNStatusCategory.PNBadRequestCategory:
-            # s = "Bad Request"
-            # # Maybe bad keys, or an SDK error
-            # del self.msg_queue[0]
+        # s = "Bad Request"
+        # # Maybe bad keys, or an SDK error
+        # del self.msg_queue[0]
         # elif status.category == PNStatusCategory.PNTimeoutCategory:
-            # s = "Timeout"
-            # # Republish with exponential backoff
-            # msg_tuple = self.msg_queue[0]
-            # message = msg_tuple[0]
-            # timestamp = msg_tuple[1]
-            # retry_time = msg_tuple[2]
+        # s = "Timeout"
+        # # Republish with exponential backoff
+        # msg_tuple = self.msg_queue[0]
+        # message = msg_tuple[0]
+        # timestamp = msg_tuple[1]
+        # retry_time = msg_tuple[2]
 
-            # while datetime.now() > retry_time:
-            #     sleep(0.5)
-            #
-            # del self.msg_queue[0]
-            #
-            # now = datetime.now()
-            # retry_time = now + timedelta(seconds=(now - timestamp).total_seconds())
-            # self.msg_queue.append((message, timestamp, retry_time))
-            #
-            # self.pubnub.publish() \
-            #     .channel('raw_channel') \
-            #     .message(message) \
-            #     .async(self._publish_callback)
+        # while datetime.now() > retry_time:
+        #     sleep(0.5)
+        #
+        # del self.msg_queue[0]
+        #
+        # now = datetime.now()
+        # retry_time = now + timedelta(seconds=(now - timestamp).total_seconds())
+        # self.msg_queue.append((message, timestamp, retry_time))
+        #
+        # self.pubnub.publish() \
+        #     .channel('raw_channel') \
+        #     .message(message) \
+        #     .async(self._publish_callback)
 
     def _publish(self):
-        if not self.debug:
-            msgs = self.scan_svc.retrieve_in_view(reset=True)
 
-            main_msg = {
-                "device_uid": NODE,
-                "message_uid": str(uuid.uuid1()),
-                "timestamp": datetime.datetime.now(tz=self.tz).isoformat(),
-                "location": self.gps_svc.get_latest_fix(),
-                "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
-                            "devices": list(msgs.keys()),
-                            "raw": msgs},
-                "tlm": {},
-            }
+        msgs = self.scan_svc.retrieve_in_view(reset=True)
+
+        main_msg = {
+            "device_uid": NODE,
+            "message_uid": str(uuid.uuid1()),
+            "timestamp": datetime.datetime.now(tz=self.tz).isoformat(),
+            "location": self.gps_svc.get_latest_fix(),
+            "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
+                        "devices": list(msgs.keys()),
+                        "raw": msgs},
+            "tlm": {},
+        }
+        if not self.debug:
             self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
                 .should_store(True) \
                 .async(self._publish_callback)
         else:
-            msgs = self.scan_svc.retrieve_in_view(reset=True)
-
-            print({
+            logging.debug(("DEBUG MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
                 "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
                             "device_count": len(msgs.keys())},
-            })
+            }))
 
     def run(self):
         clock = timer()  # Start a clock and publish a message on a timer
@@ -205,3 +212,39 @@ class Node(threading.Thread):
         self.switch = False
         self.join(3.0)
         logging.info("done")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Start a BLE scanning node.'
+    )
+    parser.add_argument(
+        'port', metavar='port',
+        help='Specify your device location (/dev/ttyXXX0)'
+    )
+    parser.add_argument(
+        '--pub', required=True, help='Your publishing key'
+    )
+    parser.add_argument(
+        '--sub', required=True, help='Your subscription key'
+    )
+    parser.add_argument(
+        '--interval', type=int, default=10000,
+        help='Interval between messages from node in milliseconds'
+    )
+    parser.add_argument(
+        '--debug', action='store_true',
+        help='Set debug mode; print messages (not published)',
+        default=False
+    )
+    args = parser.parse_args()
+
+    args.interval = args.interval / 1000.0
+    node = Node(args.port,
+                pub_key=args.pub,
+                sub_key=args.sub,
+                interval=args.interval,
+                debug=args.debug)
+    node.daemon = False
+    node.start()
+    node.join()
