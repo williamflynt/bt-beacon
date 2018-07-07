@@ -110,6 +110,7 @@ class Node(threading.Thread):
             # s = "No error"
             # del self.msg_queue[0]  # Message successfully published to specified channel.
         # elif status.category == PNStatusCategory.PNAccessDeniedCategory:
+            # RESTART BOTTLE FOR CONFIG
             # s = "Access Denied"
             # del self.msg_queue[0]
         # elif status.category == PNStatusCategory.PNBadRequestCategory:
