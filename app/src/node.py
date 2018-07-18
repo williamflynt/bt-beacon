@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import logging
 import os
 import sys
@@ -29,17 +30,23 @@ NODE = uuid.getnode()
 #   0, 0 until we refactor ScanService to use something else.
 NODE_COORDS = (0, 0)
 
+MSG_LOG = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'msg_log_{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M"))
+)
+
 
 class Node(threading.Thread):
     def __init__(self, gps_device, pub_key=None, sub_key=None, interval=10, debug=False):
         threading.Thread.__init__(self)
-        self.daemon = True
+        self.daemon = False
 
         self.interval = interval
         self.tz = datetime.timezone(datetime.timedelta(0))
 
         self.debug = debug
         if self.debug:
+            print("Writing to {}".format(MSG_LOG))
             print("*** Debug messages are not complete messages.")
 
         # Set up logging to file if debug is False
@@ -55,7 +62,7 @@ class Node(threading.Thread):
             if pub_key is None:
                 while True:
                     p1 = input("Enter your publishing key: ")
-                    if len(p1) != 42:
+                    if len(p1) != 42 and p1 != "demo":
                         print("Your publishing key is too short!")
                     else:
                         pub_key = p1
@@ -63,7 +70,7 @@ class Node(threading.Thread):
             if sub_key is None:
                 while True:
                     s1 = input("Enter your subscription key: ")
-                    if len(s1) != 42:
+                    if len(s1) != 42 and s1 != "demo":
                         print("Your subscription key is too short!")
                     else:
                         sub_key = s1
@@ -76,57 +83,46 @@ class Node(threading.Thread):
         pnconfig.subscribe_key = sub_key
         pnconfig.publish_key = pub_key
         pnconfig.ssl = False
-        self.pubnub = PubNub(pnconfig)
-        logging.info("Connected with SSL set to {}".format(pnconfig.ssl))
+        try:
+            self.pubnub = PubNub(pnconfig)
+            logging.info("Connected with SSL set to {}".format(pnconfig.ssl))
+        except:
+            self.pubnub = None
+            logging.warning("No PubNub connection. Running offline-only mode.")
 
         logging.info("Setting up GPS service")
         self.gps_svc = gps.CoordinateService(gps_device)
         self.gps_svc.daemon = True
-        logging.info("Starting GPS service")
-        self.gps_svc.start()
-        # Get node coordinates for the scan service as needed here
-        logging.info("Getting the first GPS fix")
-        # # Wait for fix or a set of fixes w/ a max timeout
-        timeout = 10
-        clock = timer()
-        while True:
-            time.sleep(0.5)
-            if timer() - clock > timeout:
-                logging.info("GPS fix timeout - moving on")
-                break
-            elif self.gps_svc.latest_fix:
-                logging.info("GPS fix acquired")
-                break
-        # # Do math to find distance from a known anchor point
-        pass
 
-        logging.info("Setting up BLE scanning service")  # Probably time to do this direct from Monitor
-        self.scan_svc = scan.ScanService(pub_key, sub_key, not debug, NODE, NODE_COORDS)
-        logging.info("Starting BLE scanner")
-        self.scan_svc.scan()
-        logging.info("BLE scanner started")
+        logging.info("Setting up BLE scanning service")
+        # TODO: This is blocking when run in terminal (aka how we do on Raspberry Pi)
+        self.scan_svc = scan.BleMonitor()
+        self.scan_svc.daemon = True
 
-        logging.info("Node initialized")
-        time.sleep(1)
+        logging.info("Node initialized - ready for start")
 
     def _publish_callback(self, result, status):
-        # TODO
-        pass
+        # TODO: All of this
+
         # Check whether request successfully completed or not
-        # s = None
-        # if not status.is_error():
-        # s = "No error"
+        # s = None  # remove post-debug
+        if not status.is_error():
+            # TODO: set the messages retrieved by this message to 'published'
+            # use msg_id if possible like:
+            # self.scan_svc.reset_in_view(status_to_remove=msg_id)
+            pass
+        # s = "No error"  # remove post-debug
         # del self.msg_queue[0]  # Message successfully published to specified channel.
         # elif status.category == PNStatusCategory.PNAccessDeniedCategory:
         # RESTART BOTTLE FOR CONFIG IF STOPPED
-        # s = "Access Denied"
+        # s = "Access Denied"  # remove post-debug
         # del self.msg_queue[0]
         # elif status.category == PNStatusCategory.PNBadRequestCategory:
-        # s = "Bad Request"
+        # s = "Bad Request"  # remove post-debug
         # # Maybe bad keys, or an SDK error
         # del self.msg_queue[0]
         # elif status.category == PNStatusCategory.PNTimeoutCategory:
-        # s = "Timeout"
+        # s = "Timeout"  # remove post-debug
         # # Republish with exponential backoff
         # msg_tuple = self.msg_queue[0]
         # message = msg_tuple[0]
@@ -147,13 +143,14 @@ class Node(threading.Thread):
         #     .message(message) \
         #     .async(self._publish_callback)
 
-    def _publish(self):
+    def _log_and_publish(self, log=True):
 
-        msgs = self.scan_svc.retrieve_in_view(reset=True)
+        msg_id = str(uuid.uuid1())
+        msgs = self.scan_svc.retrieve_in_view(reset=True, set_status=msg_id)
 
         main_msg = {
             "device_uid": NODE,
-            "message_uid": str(uuid.uuid1()),
+            "message_uid": msg_id,
             "timestamp": datetime.datetime.now(tz=self.tz).isoformat(),
             "location": self.gps_svc.get_latest_fix(),
             "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
@@ -161,20 +158,47 @@ class Node(threading.Thread):
                         "raw": msgs},
             "tlm": {},
         }
-        if not self.debug:
+
+        if log:
+            with open(MSG_LOG, 'a') as msg_log:
+                msg_log.writelines([json.dumps(main_msg), "\n"])
+
+        if not self.debug and self.pubnub:
+            # TODO: get msg id
             self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
                 .should_store(True) \
                 .async(self._publish_callback)
         else:
-            logging.debug(("DEBUG MSG", {
+            logging.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
                 "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
                             "device_count": len(msgs.keys())},
             }))
 
     def run(self):
+        # First we start our supporting threads
+        logging.info("Starting GPS service")
+        self.gps_svc.start()
+        # Get node coordinates for the scan service as needed here
+        logging.info("Getting the first GPS fix")
+        # # Wait for fix or a set of fixes w/ a max timeout
+        timeout = 10
+        clock = timer()
+        while True:
+            time.sleep(0.5)
+            if timer() - clock > timeout:
+                logging.info("GPS fix timeout - moving on")
+                break
+            elif self.gps_svc.latest_fix:
+                logging.info("GPS fix acquired")
+                break
+
+        logging.info("Starting BLE scanner")
+        self.scan_svc.start()
+        logging.info("BLE scanner started")
+
         clock = timer()  # Start a clock and publish a message on a timer
         msg_alarm = 1  # Set to 1 to start with a message immediately
 
@@ -187,7 +211,7 @@ class Node(threading.Thread):
         old_mod = 0.0
         while self.switch:
             if msg_alarm:  # We only send a message when the message alarm goes off
-                self._publish()
+                self._log_and_publish()
                 msg_alarm = 0
 
             elapsed = timer() - clock
@@ -207,7 +231,7 @@ class Node(threading.Thread):
         logging.info("Shutting down GPS service")
         self.gps_svc.shutdown()
         logging.info("Shutting down BLE scanner")
-        self.scan_svc.stop()
+        self.scan_svc.terminate()
         logging.info("Shutting down node")
         self.switch = False
         self.join(3.0)
