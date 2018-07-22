@@ -69,8 +69,7 @@ with those distros make sure the virtual environment is in a non-user folder, li
 To get started, you need to install some system packages:
 
 ```
-sudo apt-get -y install bluez bluez-hcidump
-sudo apt-get -y install python3-dev libbluetooth-dev libcap2-bin
+sudo apt-get -y install bluez bluez-hcidump python3-dev libbluetooth-dev libcap2-bin
 # Give python the required socket permissions
 sudo setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python))
 ```
@@ -78,6 +77,8 @@ sudo setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python))
 You'll also need a virtual environment (recommended) with some Python packages:
 
 ```
+pip install --upgrade pip
+pip install wheel
 pip install -r app/requirements.txt
 ```
 

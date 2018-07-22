@@ -17,7 +17,7 @@ from pubnub.pubnub import PubNub
 try:
     import app.src.gps as gps
     import app.src.scan as scan
-except ModuleNotFoundError as e:
+except ImportError as e:
     import gps
     import scan
 

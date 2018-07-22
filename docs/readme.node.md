@@ -24,7 +24,7 @@ cd $DIRNAME
 
 For now, clone the repo. Then:
 
-1. Make a virtual environment and use it like: `venv . && source ./bin/activate`
+1. Make a virtual environment and use it like: `python3 -m venv . && source ./bin/activate`
 2. Follow the setup in `readme.scan.md` under the **Installing** heading to make sure your BLE scanner works.
 3. Install the requirements like: `pip install -r app/requirements.txt` if you haven't yet.
 4. Make sure your GPS device is plugged into the USB.
@@ -36,7 +36,7 @@ For now, clone the repo. Then:
 You can test your GPS and BLE scanner by using a basic testing node. It doesn't publish anything to PubNub,
 but it will connect. In your Python terminal:
 
-~~~pythonstub
+~~~python
 # Where /dev/ttyACM0 is your GPS device
 from time import sleep
 from app.src.node import *
