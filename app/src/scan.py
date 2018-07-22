@@ -115,9 +115,14 @@ class BleMonitor(Monitor):
             self.reset_in_view()
         return temp_msgs
 
-    def reset_in_view(self, hard=False, status_to_remove='published'):
+    def reset_in_view(self, hard=False, status_to_remove='published',
+                      new_status=None):
         if hard:
             self.in_view = []
+        if new_status:
+            for msg in self.in_view:
+                if msg['status'] == status_to_remove:
+                    msg['status'] = new_status
         else:
             self.in_view = [msg for msg in self.in_view
                             if msg['status'] != status_to_remove]

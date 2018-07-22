@@ -37,7 +37,7 @@ MSG_LOG = os.path.join(
 
 
 class Node(threading.Thread):
-    def __init__(self, gps_device, pub_key=None, sub_key=None, interval=10, debug=False):
+    def __init__(self, gps_device, pub_key=None, sub_key=None, interval=30, debug=False):
         threading.Thread.__init__(self)
         self.daemon = False
 
@@ -105,12 +105,8 @@ class Node(threading.Thread):
         # TODO: All of this
 
         # Check whether request successfully completed or not
-        # s = None  # remove post-debug
         if not status.is_error():
-            # TODO: set the messages retrieved by this message to 'published'
-            # use msg_id if possible like:
-            # self.scan_svc.reset_in_view(status_to_remove=msg_id)
-            pass
+            self.scan_svc.reset_in_view(status_to_remove=status.uuid)
         # s = "No error"  # remove post-debug
         # del self.msg_queue[0]  # Message successfully published to specified channel.
         # elif status.category == PNStatusCategory.PNAccessDeniedCategory:
@@ -145,14 +141,25 @@ class Node(threading.Thread):
 
     def _log_and_publish(self, log=True):
 
+        now = datetime.datetime.now()
+        previous = now - datetime.timedelta(seconds=self.interval)
+
         msg_id = str(uuid.uuid1())
         msgs = self.scan_svc.retrieve_in_view(reset=True, set_status=msg_id)
+
+        location = self.gps_svc.get_latest_fix()
+        if location:
+            is_old_location = int(location[3] >= previous)
+            location[3] = location[3].isoformat()
+        else:
+            is_old_location = 0
 
         main_msg = {
             "device_uid": NODE,
             "message_uid": msg_id,
             "timestamp": datetime.datetime.now(tz=self.tz).isoformat(),
             "location": self.gps_svc.get_latest_fix(),
+            "is_old_location": is_old_location,
             "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
                         "devices": list(msgs.keys()),
                         "raw": msgs},
@@ -164,12 +171,13 @@ class Node(threading.Thread):
                 msg_log.writelines([json.dumps(main_msg), "\n"])
 
         if not self.debug and self.pubnub:
-            # TODO: get msg id
-            self.pubnub.publish() \
+            result, status = self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
                 .should_store(True) \
                 .async(self._publish_callback)
+            self.scan_svc.reset_in_view(status_to_remove=msg_id,
+                                        new_status=status.uuid)
         else:
             logging.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
