@@ -46,15 +46,15 @@ chmod +x run_node.py
 # Create service for Node, awaiting registration
 # On registration: node.service is enabled (thanks to sudo access for user pi)
 EXEC="$DIR/run_node.py"
-sed -i 's/ExecStart=.*/ExecStart=$EXEC/' $DIR/setup/node.service
-sed -i 's/WorkingDirectory=.*/$DIR/' $DIR/setup/node.service
+sed -i "s/ExecStart=.*/ExecStart=$EXEC/" $DIR/setup/node.service
+sed -i "s/WorkingDirectory=.*/$DIR/" $DIR/setup/node.service
 sudo cp $DIR/setup/node.service /etc/systemd/system/node.service
 
 
 # Run the NodeRegistration server
 EXEC="$VPYTHON $DIR/app/src/node_register.py"
-sed -i 's/ExecStart=.*/ExecStart=$EXEC/' $DIR/setup/node_register.service
-sed -i 's/WorkingDirectory=.*/$DIR/' $DIR/setup/node_register.service
+sed -i "s/ExecStart=.*/ExecStart=$EXEC/" $DIR/setup/node_register.service
+sed -i "s/WorkingDirectory=.*/$DIR/" $DIR/setup/node_register.service
 sudo cp $DIR/setup/node.service /etc/systemd/system/node_register.service
 sudo systemctl start node_register.service
 sudo systemctl enable node_register.service
