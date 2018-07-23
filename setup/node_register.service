@@ -1,0 +1,14 @@
+[Unit]
+Description=Node Registration Service
+After=network.target
+
+[Service]
+ExecStart=
+WorkingDirectory=
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

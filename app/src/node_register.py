@@ -1,14 +1,13 @@
 import os
 import requests
-import subprocess
-import sys
 import uuid
 
 from bottle import route, run, template, request
 
 INTERNAL_POST = "/getkeys"
-# POST_TO = "https://flock.starlingiot.com/register/{}".format(str(uuid.getnode()))
-POST_TO = "http://localhost:8000/nodes/register/{}".format(str(uuid.getnode()))
+NODE_ID = str(uuid.getnode())
+# POST_TO = "https://localhost:8000/nodes/register/{}".format(NODE_ID)
+POST_TO = "https://demo.starlingiot.com/nodes/register/{}".format(NODE_ID)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -56,7 +55,7 @@ def getkeys():
     if len(keys) == 2 and "pub" in keys and "sub" in keys:
         pub = content['pub']
         sub = content['sub']
-        with open(os.path.join(FILE_DIR, 'pubnub.env'), 'wb') as envfile:
+        with open(os.path.join(FILE_DIR, '..', '..', 'pubnub.env'), 'wb') as envfile:
             envfile.writelines([bytes(s.encode('utf-8')) for s in [
                 "PUB_KEY={}".format(pub),
                 "\n",
@@ -65,13 +64,13 @@ def getkeys():
         os.environ['PUB_KEY'] = pub
         os.environ['SUB_KEY'] = sub
 
-        # Start the node
-        script_path = os.path.join(FILE_DIR, "node.py")
-        subprocess.Popen(["nohup",
-                          os.path.join(FILE_DIR, "..", "..", "venv", "bin", "python"),
-                          script_path, "/dev/ttyACM0", "--pub", pub, "--sub", sub])
+        # (Re)start the node
+        # This works because user pi doesn't need a sudo password
+        os.system("sudo systemctl stop node.service")
+        os.system("sudo systemctl start node.service")
+        os.system("sudo systemctl enable node.service")
 
-        # TODO: Kill bottle (also do this check on startup)
+        # TODO: Kill bottle
         # https://stackoverflow.com/questions/11282218/bottle-web-framework-how-to-stop
 
         return template(
