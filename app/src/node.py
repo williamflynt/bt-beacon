@@ -130,7 +130,7 @@ class Node(threading.Thread):
 
         now = datetime.datetime.now()
         if not self.expected:
-            self.expected = now
+            self.expected = now + datetime.timedelta(seconds=1)
         else:
             # The latest expected message is the last one, plus our set interval
             self.expected = self.expected + datetime.timedelta(seconds=self.interval)
