@@ -55,7 +55,6 @@ class Node(threading.Thread):
         self.expected = None  # track expected message times
         self.last_loc = None  # last fix message for comparison
         self.last_vel = None  # last velocity message for comparison
-        self.tz = datetime.timezone(datetime.timedelta(0))
 
         self.debug = debug
         if self.debug:
@@ -168,7 +167,7 @@ class Node(threading.Thread):
         main_msg = {
             "device_uid": NODE,
             "message_uid": msg_id,
-            "timestamp": datetime.datetime.now(tz=self.tz).isoformat(),
+            "timestamp": datetime.datetime.now(tz=UTC).isoformat(),
             "location": location,
             "is_old_location": is_old_location,
             "velocity": velocity,
@@ -184,7 +183,7 @@ class Node(threading.Thread):
                 msg_log.writelines([json.dumps(main_msg), "\n"])
 
         if not self.debug and self.pubnub:
-            p = self.pubnub.publish() \
+            self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
                 .should_store(True) \
