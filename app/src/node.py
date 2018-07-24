@@ -130,7 +130,7 @@ class Node(threading.Thread):
 
         now = datetime.datetime.now()
         if not self.expected:
-            self.expected = now + datetime.timedelta(seconds=2)
+            self.expected = now + datetime.timedelta(seconds=5)
 
         msg_id = str(uuid.uuid1())
         # TODO: We would like to set a UUID-type status here but...
@@ -159,7 +159,7 @@ class Node(threading.Thread):
         else:
             is_old_velocity = 0
 
-        self.expected = now + datetime.timedelta(seconds=self.interval + 1)
+        self.expected = now + datetime.timedelta(seconds=self.interval + 5)
 
         main_msg = {
             "device_uid": NODE,
