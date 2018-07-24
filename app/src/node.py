@@ -36,7 +36,7 @@ MSG_LOG = os.path.join(
 
 
 class Node(threading.Thread):
-    def __init__(self, gps_device, pub_key=None, sub_key=None, interval=30, debug=False):
+    def __init__(self, gps_device, pub_key=None, sub_key=None, interval=300, debug=False):
         self.parent = current_thread()
         threading.Thread.__init__(self)
         self.daemon = False
