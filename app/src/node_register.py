@@ -1,8 +1,10 @@
 import os
-import requests
+import sys
 import uuid
 
+import requests
 from bottle import route, run, template, request
+from requests.exceptions import SSLError
 
 INTERNAL_POST = "/getkeys"
 NODE_ID = str(uuid.getnode())
@@ -47,10 +49,31 @@ def getkeys():
     username = request.forms.get('username')
     passwd = request.forms.get('passwd')
     data = {"username": username, "passwd": passwd}
+    success_msg = "<h1>Success</h1>" \
+                  "<p>This server is shutting down.</p>"
 
-    r = requests.post(POST_TO, data=data)
-    content = r.json()
-    keys = content.keys()
+    try:
+        r = requests.post(POST_TO, data=data)
+    except SSLError as e:
+        r = requests.post(POST_TO, data=data, verify=False)
+        success_msg += '<p><span style="color: darkred;">' \
+                       'Warning: </span> The SSL Certificates could not be ' \
+                       'verified. Proceed only if this is a known issue. ' \
+                       'Otherwise check your credentials against known ' \
+                       'credentials on the node directly.</p'
+
+    if r.status_code == requests.codes.forbidden:
+        return template('''
+                        <h1>Oooops...</h1>
+                        <p>Incorrect username/password combo.</p>
+                        <a href="/">Try Again</a>
+                        ''')
+
+    try:
+        content = r.json()
+        keys = content.keys()
+    except:
+        return template(r.text)
 
     if len(keys) == 2 and "pub" in keys and "sub" in keys:
         pub = content['pub']
@@ -70,18 +93,26 @@ def getkeys():
         os.system("sudo systemctl start node.service")
         os.system("sudo systemctl enable node.service")
 
-        # TODO: Kill bottle
         # https://stackoverflow.com/questions/11282218/bottle-web-framework-how-to-stop
+        sys.stderr.close()
+    else:
+        success_msg = "<h1>Oooops...</h1>" \
+                      "<p>The credential server didn't return the keys " \
+                      "we expected. That means your node won't be " \
+                      "functional</p>" \
+                      "<p>If you're sure the user/pass combo was correct, " \
+                      "there must be another error.</p>" \
+                      "<p>Try later, or contact your administrator.</p>"
 
-        return template(
-            """
-            <html>
-            <body>
-                <h1>Success</h1>
-            </body>
-            </html>
-            """
-        )
+    return template(
+        """
+        <html>
+        <body>
+            {}
+        </body>
+        </html>
+        """.format(success_msg)
+    )
 
 
 run(host='0.0.0.0', port=8765)
