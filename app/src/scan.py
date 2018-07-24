@@ -23,6 +23,7 @@ class BleMonitor(Monitor):
         self.node_name = node_name
         self.node_coords = node_coords
         self.msg_queue = []
+        self.parent = None
 
         # For tracking beacons in view of scanner over time
         self.in_view = []

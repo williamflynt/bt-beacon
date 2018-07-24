@@ -1,0 +1,79 @@
+$GPRMC,171705.00,A,3455.14738,N,08541.76462,W,469.156,140.92,080718,,,A*7F
+
+$GPVTG,140.92,T,,M,469.156,N,868.877,K,A*34
+
+$GPGGA,171705.00,3455.14738,N,08541.76462,W,1,07,2.97,9916.1,M,-31.3,M,,*5D
+
+$GPGSA,A,3,28,17,01,03,11,22,18,,,,,,4.35,2.97,3.18*01
+
+$GPGSV,4,1,13,01,30,044,21,03,23,094,35,06,37,207,17,07,05,167,*75
+
+$GPGSV,4,2,13,11,17,051,20,13,04,253,,17,63,319,25,18,06,041,26*7E
+
+$GPGSV,4,3,13,19,45,280,25,22,19,069,27,24,09,321,,28,69,077,29*7B
+
+$GPGSV,4,4,13,30,30,183,*41
+
+$GPGLL,3455.14738,N,08541.76462,W,171705.00,A,A*79
+
+$GPRMC,171706.00,A,3455.04263,N,08541.66948,W,470.113,140.98,080718,,,A*71
+
+$GPVTG,140.98,T,,M,470.113,N,870.650,K,A*35
+
+$GPGGA,171706.00,3455.04263,N,08541.66948,W,1,07,2.97,9904.7,M,-31.3,M,,*55
+
+$GPGSA,A,3,28,17,01,03,11,22,18,,,,,,4.35,2.97,3.18*01
+
+$GPGSV,4,1,13,01,30,044,21,03,23,094,35,06,37,207,18,07,05,167,*7A
+
+$GPGSV,4,2,13,11,17,051,20,13,04,253,,17,63,319,25,18,06,041,26*7E
+
+$GPGSV,4,3,13,19,45,280,25,22,19,069,28,24,09,321,,28,69,077,28*75
+
+$GPGSV,4,4,13,30,30,183,*41
+
+$GPGLL,3455.04263,N,08541.66948,W,171706.00,A,A*74
+
+
+
+===
+
+
+
+$GPVTG,054.7,T,034.4,M,005.5,N,010.2,K*48
+
+where:
+        VTG          Track made good and ground speed
+        054.7,T      True track made good (degrees)
+        034.4,M      Magnetic track made good
+        005.5,N      Ground speed, knots
+        010.2,K      Ground speed, Kilometers per hour
+        *48          Checksum
+
+
+
+
+$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47
+
+Where:
+     GGA          Global Positioning System Fix Data
+     123519       Fix taken at 12:35:19 UTC
+     4807.038,N   Latitude 48 deg 07.038' N
+     01131.000,E  Longitude 11 deg 31.000' E
+     1            Fix quality: 0 = invalid
+                               1 = GPS fix (SPS)
+                               2 = DGPS fix
+                               3 = PPS fix
+			       4 = Real Time Kinematic
+			       5 = Float RTK
+                               6 = estimated (dead reckoning) (2.3 feature)
+			       7 = Manual input mode
+			       8 = Simulation mode
+     08           Number of satellites being tracked
+     0.9          Horizontal dilution of position
+     545.4,M      Altitude, Meters, above mean sea level
+     46.9,M       Height of geoid (mean sea level) above WGS84
+                      ellipsoid
+     (empty field) time in seconds since last DGPS update
+     (empty field) DGPS station ID number
+     *47          the checksum data, always begins with *
