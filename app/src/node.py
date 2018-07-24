@@ -3,12 +3,12 @@ import json
 import logging
 import os
 import threading
-from threading import current_thread
 import time
 import uuid
-
+from threading import current_thread
 from timeit import default_timer as timer
 
+import pytz
 from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
@@ -33,6 +33,9 @@ MSG_LOG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     'msg_log_{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M"))
 )
+
+# We work in UTC
+UTC = pytz.timezone('UTC')
 
 
 class Node(threading.Thread):
@@ -127,10 +130,13 @@ class Node(threading.Thread):
             pass
 
     def _log_and_publish(self, log=True):
+        # Get these ASAP to make old message detection more accurate
+        location = self.gps_svc.get_latest_fix()
+        velocity = self.gps_svc.get_latest_velocity()
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(UTC)
         if not self.expected:
-            self.expected = now + datetime.timedelta(seconds=5)
+            self.expected = now + datetime.timedelta(seconds=1)
 
         msg_id = str(uuid.uuid1())
         # TODO: We would like to set a UUID-type status here but...
@@ -139,7 +145,6 @@ class Node(threading.Thread):
         msgs = self.scan_svc.retrieve_in_view(reset=True,
                                               set_status='retrieved')
 
-        location = self.gps_svc.get_latest_fix()
         if location:
             location = list(location)
             is_old_location = int(location[3] > self.expected.time() or
@@ -149,7 +154,6 @@ class Node(threading.Thread):
         else:
             is_old_location = 0
 
-        velocity = self.gps_svc.get_latest_velocity()
         if velocity:
             velocity = list(velocity)
             is_old_velocity = int(velocity[3] > self.expected or
@@ -159,7 +163,7 @@ class Node(threading.Thread):
         else:
             is_old_velocity = 0
 
-        self.expected = now + datetime.timedelta(seconds=self.interval + 5)
+        self.expected = now + datetime.timedelta(seconds=self.interval)
 
         main_msg = {
             "device_uid": NODE,
