@@ -130,10 +130,7 @@ class Node(threading.Thread):
 
         now = datetime.datetime.now()
         if not self.expected:
-            self.expected = now + datetime.timedelta(seconds=1)
-        else:
-            # The latest expected message is the last one, plus our set interval
-            self.expected = self.expected + datetime.timedelta(seconds=self.interval)
+            self.expected = now + datetime.timedelta(seconds=2)
 
         msg_id = str(uuid.uuid1())
         # TODO: We would like to set a UUID-type status here but...
@@ -145,8 +142,8 @@ class Node(threading.Thread):
         location = self.gps_svc.get_latest_fix()
         if location:
             location = list(location)
-            is_old_location = int(location[3] > self.expected.time() and
-                                  location != self.last_loc)
+            is_old_location = int(location[3] > self.expected.time() or
+                                  location == self.last_loc)
             location[3] = location[3].isoformat()
             self.last_loc = location
         else:
@@ -155,12 +152,14 @@ class Node(threading.Thread):
         velocity = self.gps_svc.get_latest_velocity()
         if velocity:
             velocity = list(velocity)
-            is_old_velocity = int(velocity[3] > self.expected and
-                                  velocity != self.last_vel)
+            is_old_velocity = int(velocity[3] > self.expected or
+                                  velocity == self.last_vel)
             velocity[3] = velocity[3].time().isoformat()
             self.last_vel = velocity
         else:
             is_old_velocity = 0
+
+        self.expected = now + datetime.timedelta(seconds=self.interval + 1)
 
         main_msg = {
             "device_uid": NODE,
