@@ -26,7 +26,7 @@ NOTE: If you have a pubnub.env file with bad keys it will
 """
 env = Path('./pubnub.env')
 if env.exists():
-    dotenv.load_dotenv(env)
+    dotenv.load_dotenv(str(env.absolute()))
 pub = os.environ.get("PUB_KEY", None)
 sub = os.environ.get("SUB_KEY", None)
 
