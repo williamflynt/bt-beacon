@@ -1,4 +1,4 @@
-#!/home/development/bt-beacon/venv/bin/python
+#!
 
 import argparse
 import os
