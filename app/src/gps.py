@@ -127,8 +127,8 @@ class CoordinateService(Manager):
         try:
             for k, v in self.vel_array[0].items():
                 return (
-                    v[0], v[1],
-                    datetime.datetime.fromtimestamp(k)
+                    v[0], v[1],  # speed in kph, track direction (true)
+                    datetime.datetime.fromtimestamp(k)  # Python DT obj
                 )
         except IndexError:
             return 0

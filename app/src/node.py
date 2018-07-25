@@ -148,7 +148,7 @@ class Node(threading.Thread):
             location = list(location)
             is_old_location = int(location[3] > self.expected.time() or
                                   location == self.last_loc)
-            location[3] = location[3].isoformat()
+            location[3] = location[3].isoformat()  # %H:%M:%S
             self.last_loc = location
         else:
             is_old_location = 0
@@ -157,7 +157,7 @@ class Node(threading.Thread):
             velocity = list(velocity)
             is_old_velocity = int(velocity[3] > self.expected or
                                   velocity == self.last_vel)
-            velocity[3] = velocity[3].time().isoformat()
+            velocity[3] = velocity[3].time().isoformat()  # %H:%M:%S
             self.last_vel = velocity
         else:
             is_old_velocity = 0
