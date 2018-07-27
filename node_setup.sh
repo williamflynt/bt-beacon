@@ -22,6 +22,10 @@ echo "Setting up virtual environment"
 # Create and activate our virtual environment
 cd $DIR
 python3 -m venv ${DIR}/venv
+# Add to our PYTHONPATH for import consistency
+PATHLINE="export PYTHONPATH=$DIR/app/src:$DIR/app:$DIR:$PYTHONPATH"
+sed -i "\$a$PATHLINE" ${DIR}/venv/bin/activate
+sed -i "\$a$PATHLINE" ~/.bashrc
 source ${DIR}/venv/bin/activate
 
 
