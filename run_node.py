@@ -6,7 +6,10 @@ from pathlib import Path
 
 import dotenv
 
-from node import Node
+try:
+    from node import Node
+except ImportError:
+    from app.src.node import Node
 
 """
 The node needs publish and subscribe keys.

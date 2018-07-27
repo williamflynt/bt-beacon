@@ -13,9 +13,14 @@ from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-import gps
-import scan
-from utility import get_pn_uuid
+try:
+    import gps
+    import scan
+    from utility import get_pn_uuid
+except ImportError:
+    import app.src.gps as gps
+    import app.src.scan as scan
+    from app.src.utility import get_pn_uuid
 
 # ScanService needs a node name to publish and configure via PubNub.
 # Let's use a UUID for the device.

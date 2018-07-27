@@ -12,7 +12,10 @@ from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-from utility import get_pn_uuid
+try:
+    from utility import get_pn_uuid
+except ImportError:
+    from app.src.utility import get_pn_uuid
 
 UTC = pytz.timezone('UTC')
 

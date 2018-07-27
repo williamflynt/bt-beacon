@@ -5,7 +5,10 @@ import requests
 from bottle import route, run, template, request
 from requests.exceptions import SSLError
 
-from utility import get_pn_uuid
+try:
+    from utility import get_pn_uuid
+except ImportError:
+    from app.src.utility import get_pn_uuid
 
 INTERNAL_POST = "/getkeys"
 NODE_ID = get_pn_uuid()
