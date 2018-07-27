@@ -81,6 +81,13 @@ def get_pn_uuid(set_uuid=True, override=False, uuid_key="PN_UUID"):
             logging.debug("Found .bashrc")
             write_count += write_uuid(bashrc, export_line)
 
+        logging.debug("Adding to pubnub.env")
+        env = os.path.join(FILE_DIR, "..", "..", "pubnub.env")
+        if os.path.isfile(env):
+            logging.debug("Found pubnub.env")
+            write_count += write_uuid(env,
+                                      "{}={}\n".format(uuid_key, uuid))
+
         logging.debug("Checking writes...")
         if not write_count:
             logging.debug("No writes!")
