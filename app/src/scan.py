@@ -12,10 +12,7 @@ from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-try:
-    import app.src.utility as utility
-except ImportError as e:
-    import utility
+from utility import get_pn_uuid
 
 UTC = pytz.timezone('UTC')
 
@@ -60,7 +57,7 @@ class BleMonitor(Monitor):
             pnconfig = PNConfiguration()
             pnconfig.subscribe_key = sub_key
             pnconfig.publish_key = pub_key
-            pnconfig.uuid = utility.get_pn_uuid()
+            pnconfig.uuid = get_pn_uuid()
             pnconfig.ssl = False
 
             self.pubnub = PubNub(pnconfig)

@@ -13,18 +13,13 @@ from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
-try:
-    import app.src.gps as gps
-    import app.src.scan as scan
-    import app.src.utility as utility
-except ImportError as e:
-    import gps
-    import scan
-    import utility
+import gps
+import scan
+from utility import get_pn_uuid
 
 # ScanService needs a node name to publish and configure via PubNub.
 # Let's use a UUID for the device.
-NODE = utility.get_pn_uuid()
+NODE = get_pn_uuid()
 
 # The ScanService needs coordinates in meters from an origin to trilaterate.
 # Since this Node class is concerned with true coordinates, we can just set
@@ -101,12 +96,12 @@ class Node(threading.Thread):
         pnconfig = PNConfiguration()
         pnconfig.subscribe_key = sub_key
         pnconfig.publish_key = pub_key
-        pnconfig.uuid = utility.get_pn_uuid()
+        pnconfig.uuid = NODE
         pnconfig.ssl = False
         try:
             self.pubnub = PubNub(pnconfig)
             logger.info("Connected with SSL set to {}".format(pnconfig.ssl))
-        except:
+        except Exception:
             self.pubnub = None
             logger.warning("No PubNub connection. Running offline-only mode.")
 

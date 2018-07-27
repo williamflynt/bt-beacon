@@ -5,13 +5,10 @@ import requests
 from bottle import route, run, template, request
 from requests.exceptions import SSLError
 
-try:
-    import app.src.utility as utility
-except ImportError as e:
-    import utility
+from utility import get_pn_uuid
 
 INTERNAL_POST = "/getkeys"
-NODE_ID = utility.get_pn_uuid()
+NODE_ID = get_pn_uuid()
 # POST_TO = "https://localhost:8000/nodes/register/{}".format(NODE_ID)
 POST_TO = "https://demo.starlingiot.com/nodes/register/{}".format(NODE_ID)
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
