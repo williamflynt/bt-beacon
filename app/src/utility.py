@@ -6,6 +6,7 @@ import pathlib
 import socket
 import sys
 
+import dotenv
 import psutil
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +21,10 @@ logger.addHandler(logfile)
 def get_pn_uuid(set_uuid=True, override=False, uuid_key="PN_UUID"):
     logger.setLevel(logging.DEBUG)
     logfile.setLevel(logging.DEBUG)
+
+    env = pathlib.Path(FILE_DIR, "..", "..", "pubnub.env")
+    if env.exists():
+        dotenv.load_dotenv(str(env.absolute()))
 
     logger.debug("Checking override")
     if not override:
