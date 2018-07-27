@@ -13,33 +13,39 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
 GPS_LOG = os.path.join(LOG_DIR, 'gps.log')
 
+logger = logging.getLogger('gps')
+logfile = logging.FileHandler(GPS_LOG)
+logger.addHandler(logfile)
+
 
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
                  vel_inst_seconds=10, s_i_max=16.1, s_a_max=16.1,
                  t_i_max=15, t_a_max=30):
         if not debug:
-            logging.basicConfig(filename=GPS_LOG, level=logging.INFO)
+            logger.setLevel(logging.INFO)
+            logfile.setLevel(logging.INFO)
         else:
-            logging.basicConfig(filename=GPS_LOG, level=logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
+            logfile.setLevel(logging.DEBUG)
 
-        logging.info("Beginning GPS service setup...")
+        logger.info("Beginning GPS service setup...")
         try:
-            logging.info("Setting up serial connection to GPS device...")
+            logger.info("Setting up serial connection to GPS device...")
             if isinstance(ser, bytes) or isinstance(ser, str):
                 ser = serial.Serial(ser)
         except Exception:
-            logging.exception("********************\n"
-                              "      **GPS device error**\n"
-                              "      ********************")
+            logger.exception("********************\n"
+                             "      **GPS device error**\n"
+                             "      ********************")
             raise
 
-        logging.info("Setting up PyUBX Manager...")
+        logger.info("Setting up PyUBX Manager...")
         Manager.__init__(self, ser, debug)
         self._dumpNMEA = False
         self.latest_fix = None
         self.parent = None
-        logging.info("Manager set up. Initializing variables...")
+        logger.info("Manager set up. Initializing variables...")
 
         # Initialize values for velocity checking
         # we need enough values to satisfy average requirements - assume 1/sec
@@ -54,7 +60,7 @@ class CoordinateService(Manager):
         self.t_i_max = t_i_max  # track-instant trigger
         self.t_a_max = t_a_max  # track-average trigger
 
-        logging.info("GPS service initialized.")
+        logger.info("GPS service initialized.")
 
     @staticmethod
     def hdg_diff(init, final):
@@ -117,11 +123,11 @@ class CoordinateService(Manager):
                     self.parent.msg_alarm = 1
                 except AttributeError:
                     if self.parent:
-                        logging.WARN("*****Error accessing parent.msg_alarm.", exc_info=True)
+                        logger.warning("*****Error accessing parent.msg_alarm.", exc_info=True)
         except Exception:
-            logging.exception("********************\n"
-                              "           ***velocity error***\n"
-                              "           ********************")
+            logger.exception("********************\n"
+                             "           ***velocity error***\n"
+                             "           ********************")
 
     # Override onNMEA from parent class to do work
     def onNMEA(self, buffer):
@@ -139,7 +145,7 @@ class CoordinateService(Manager):
                     self.vel_array.appendleft({now: (speed, track)})
                     self._check_velocity()
             except AttributeError:
-                logging.exception("***Bad properties for VTG Sentence***")
+                logger.exception("***Bad properties for VTG Sentence***")
         else:
             # Potential to expand to more message types here
             pass
@@ -165,6 +171,6 @@ class CoordinateService(Manager):
         except IndexError:
             return 0
         except Exception:
-            logging.exception("********************\n"
-                              "           **latest_vel error**\n"
-                              "           ********************")
+            logger.exception("********************\n"
+                             "           **latest_vel error**\n"
+                             "           ********************")

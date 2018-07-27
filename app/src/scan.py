@@ -23,18 +23,24 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
 SCAN_LOG = os.path.join(LOG_DIR, 'scan.log')
 
+logger = logging.getLogger('scan')
+logfile = logging.FileHandler(SCAN_LOG)
+logger.addHandler(logfile)
+
 
 class BleMonitor(Monitor):
     def __init__(self, pub_key=None, sub_key=None, publish=False,
                  node_name=None, node_coords=(0, 0), debug=False):
         if not debug:
-            logging.basicConfig(filename=SCAN_LOG, level=logging.INFO)
+            logger.setLevel(logging.INFO)
+            logfile.setLevel(logging.INFO)
         else:
-            logging.basicConfig(filename=SCAN_LOG, level=logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
+            logfile.setLevel(logging.DEBUG)
 
-        logging.info("Beginning BLE scanner setup...")
+        logger.info("Beginning BLE scanner setup...")
         Monitor.__init__(self, self._on_receive, 0, None, None)
-        logging.info("Monitor established. Initializing variables...")
+        logger.info("Monitor established. Initializing variables...")
         self.publish = publish
         self.node_name = node_name
         self.node_coords = node_coords
@@ -44,10 +50,10 @@ class BleMonitor(Monitor):
         self.in_view = []
 
         if self.publish:
-            logging.info("Beginning PubNub setup...")
+            logger.info("Beginning PubNub setup...")
             if not pub_key or not sub_key or not node_name:
-                logging.warning("Missing required PubNub keys!")
-                logging.warning("Setting up service for demo only...")
+                logger.warning("Missing required PubNub keys!")
+                logger.warning("Setting up service for demo only...")
                 pub_key = "demo"
                 sub_key = "demo"
                 self.node_name = "demo"
@@ -58,9 +64,9 @@ class BleMonitor(Monitor):
             pnconfig.ssl = False
 
             self.pubnub = PubNub(pnconfig)
-            logging.info("PubNub setup complete.")
+            logger.info("PubNub setup complete.")
         else:
-            logging.info("Skipping PubNub setup (publish==False).")
+            logger.info("Skipping PubNub setup (publish==False).")
 
     @staticmethod
     def _publish_callback(result, status):
@@ -68,11 +74,11 @@ class BleMonitor(Monitor):
         if not status.is_error():
             pass  # Message successfully published to specified channel.
         elif status.category == PNStatusCategory.PNAccessDeniedCategory:
-            logging.error("PubNub returned AccessDeniedCategory on publish.")
+            logger.error("PubNub returned AccessDeniedCategory on publish.")
         elif status.category == PNStatusCategory.PNBadRequestCategory:
-            logging.error("PubNub returned BadRequestCategory on publish.")
+            logger.error("PubNub returned BadRequestCategory on publish.")
         elif status.category == PNStatusCategory.PNTimeoutCategory:
-            logging.error("PubNub publish request timed out.")
+            logger.error("PubNub publish request timed out.")
 
     def _on_receive(self, bt_addr, rssi, packet, properties):
         now = datetime.now(UTC)

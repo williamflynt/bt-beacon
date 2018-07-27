@@ -33,25 +33,34 @@ NODE_COORDS = (0, 0)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
-STR_DATE = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-MSG_LOG = os.path.join(LOG_DIR, 'msg_log_{}'.format(STR_DATE))
-NODE_LOG = os.path.join(LOG_DIR, "node-{}.log".format(STR_DATE))
+STR_DATE = datetime.datetime.now().strftime("%y%m%d_%H%M")
+MSG_LOG = os.path.join(LOG_DIR, 'messages-{}.log'.format(STR_DATE))
+NODE_LOG = os.path.join(LOG_DIR, "node.log")
 
 # We work in UTC
 UTC = pytz.timezone('UTC')
 
+logging.basicConfig(filename=os.path.join(LOG_DIR,
+                                          'debug.log'),
+                    level=logging.INFO)
+logger = logging.getLogger('node')
+logfile = logging.FileHandler(NODE_LOG)
+logger.addHandler(logfile)
+
 
 class Node(threading.Thread):
     def __init__(self, gps_device, pub_key=None, sub_key=None, interval=300, debug=False):
+        if not debug:
+            logger.setLevel(logging.INFO)
+            logfile.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.DEBUG)
+            logfile.setLevel(logging.DEBUG)
+
         self.parent = current_thread()
+
         threading.Thread.__init__(self)
         self.daemon = False
-
-        # Set up logging to file if debug is False
-        if not debug:
-            logging.basicConfig(filename=NODE_LOG, level=logging.INFO)
-        else:
-            logging.basicConfig(filename=NODE_LOG, level=logging.DEBUG)
 
         self.interval = max(interval, 1)  # min msg interval of 1 second
 
@@ -88,7 +97,7 @@ class Node(threading.Thread):
 
         # Set up PubNub for publishing stream data
         # In the future we would outsource our publishing to separate layer
-        logging.info("Connecting to PubNub")
+        logger.info("Connecting to PubNub")
         pnconfig = PNConfiguration()
         pnconfig.subscribe_key = sub_key
         pnconfig.publish_key = pub_key
@@ -96,22 +105,22 @@ class Node(threading.Thread):
         pnconfig.ssl = False
         try:
             self.pubnub = PubNub(pnconfig)
-            logging.info("Connected with SSL set to {}".format(pnconfig.ssl))
+            logger.info("Connected with SSL set to {}".format(pnconfig.ssl))
         except:
             self.pubnub = None
-            logging.warning("No PubNub connection. Running offline-only mode.")
+            logger.warning("No PubNub connection. Running offline-only mode.")
 
-        logging.info("Setting up GPS service")
+        logger.info("Setting up GPS service")
         self.gps_svc = gps.CoordinateService(gps_device)
         self.gps_svc.daemon = True
         self.gps_svc.parent = current_thread()
 
-        logging.info("Setting up BLE scanning service")
+        logger.info("Setting up BLE scanning service")
         self.scan_svc = scan.BleMonitor()
         self.scan_svc.daemon = True
         self.scan_svc.parent = current_thread()
 
-        logging.info("Node initialized - ready for start")
+        logger.info("Node initialized - ready for start")
 
     def _publish_callback(self, result, status):
         if not status.is_error():
@@ -183,9 +192,9 @@ class Node(threading.Thread):
                 "tlm": {},
             }
         except Exception:
-            logging.exception("********************\n"
-                              "***main_msg error***\n"
-                              "********************")
+            logger.exception("********************\n"
+                             "           ***main_msg error***\n"
+                             "           ********************")
             main_msg = None
 
         if log and main_msg:
@@ -200,7 +209,7 @@ class Node(threading.Thread):
                 .meta({"msg_id": msg_id}) \
                 .async(self._publish_callback)
         else:
-            logging.debug(("OFFLINE MSG", {
+            logger.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
                 "vel": self.gps_svc.get_latest_velocity(),
                 "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
@@ -209,25 +218,25 @@ class Node(threading.Thread):
 
     def run(self):
         # First we start our supporting threads
-        logging.info("Starting GPS service")
+        logger.info("Starting GPS service")
         self.gps_svc.start()
         # Get node coordinates for the scan service as needed here
-        logging.info("Getting the first GPS fix")
+        logger.info("Getting the first GPS fix")
         # # Wait for fix or a set of fixes w/ a max timeout
         timeout = 10
         clock = timer()
         while True:
             time.sleep(0.5)
             if timer() - clock > timeout:
-                logging.info("GPS fix timeout - moving on")
+                logger.info("GPS fix timeout - moving on")
                 break
             elif self.gps_svc.latest_fix:
-                logging.info("GPS fix acquired")
+                logger.info("GPS fix acquired")
                 break
 
-        logging.info("Starting BLE scanner")
+        logger.info("Starting BLE scanner")
         self.scan_svc.start()
-        logging.info("BLE scanner started")
+        logger.info("BLE scanner started")
 
         clock = timer()  # Start a clock and publish a message on a timer
         self.msg_alarm = 1  # Set to 1 to start with a message
@@ -257,11 +266,11 @@ class Node(threading.Thread):
             time.sleep(0.1)
 
     def terminate(self):
-        logging.info("Shutting down GPS service")
+        logger.info("Shutting down GPS service")
         self.gps_svc.shutdown()
-        logging.info("Shutting down BLE scanner")
+        logger.info("Shutting down BLE scanner")
         self.scan_svc.terminate()
-        logging.info("Shutting down node")
+        logger.info("Shutting down node")
         self.switch = False
         self.join(3.0)
-        logging.info("done")
+        logger.info("done")
