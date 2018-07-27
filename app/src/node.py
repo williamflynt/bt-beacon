@@ -111,12 +111,12 @@ class Node(threading.Thread):
             logger.warning("No PubNub connection. Running offline-only mode.")
 
         logger.info("Setting up GPS service")
-        self.gps_svc = gps.CoordinateService(gps_device)
+        self.gps_svc = gps.CoordinateService(gps_device, debug=debug)
         self.gps_svc.daemon = True
         self.gps_svc.parent = current_thread()
 
         logger.info("Setting up BLE scanning service")
-        self.scan_svc = scan.BleMonitor()
+        self.scan_svc = scan.BleMonitor(debug=debug)
         self.scan_svc.daemon = True
         self.scan_svc.parent = current_thread()
 
