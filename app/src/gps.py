@@ -30,8 +30,8 @@ class CoordinateService(Manager):
                 ser = serial.Serial(ser)
         except Exception:
             logging.exception("********************\n"
-                              "**GPS device error**\n"
-                              "********************")
+                              "      **GPS device error**\n"
+                              "      ********************")
             raise
 
         logging.info("Setting up PyUBX Manager...")
@@ -84,7 +84,7 @@ class CoordinateService(Manager):
 
         # Check speed for instant diff and average diff
         def speed_alarm():
-            s_val = self.vel_array[0][0]
+            s_val = self.vel_array[0][now][0]  # { now: (speed, track) }
             """
             This gets the least-recent speed adhering to the vel_inst_seconds.
             The idea is to check less recently than the fastest rate of msgs.
@@ -100,7 +100,7 @@ class CoordinateService(Manager):
 
         # Check speed for instant diff and average diff
         def track_alarm():
-            t_val = abs(self.vel_array[0][1])
+            t_val = abs(self.vel_array[0][now][1])  # { now: (speed, track) }
             t_i_check_val = [x[1] for x in self.vel_array if
                              list(x.keys)[0] >= (now - self.vel_inst_seconds)][-1]
             # Compute average heading over time
@@ -120,8 +120,8 @@ class CoordinateService(Manager):
                         logging.WARN("*****Error accessing parent.msg_alarm.", exc_info=True)
         except Exception:
             logging.exception("********************\n"
-                              "***velocity error***\n"
-                              "********************")
+                              "      ***velocity error***\n"
+                              "      ********************")
 
     # Override onNMEA from parent class to do work
     def onNMEA(self, buffer):
@@ -166,5 +166,5 @@ class CoordinateService(Manager):
             return 0
         except Exception:
             logging.exception("********************\n"
-                              "**latest_vel error**\n"
-                              "********************")
+                              "      **latest_vel error**\n"
+                              "      ********************")
