@@ -2,7 +2,7 @@ import datetime
 import logging
 import os
 from collections import deque
-from functools import partial
+from functools import partialmethod
 
 import numpy as np
 import pynmea2
@@ -100,15 +100,18 @@ class CoordinateService(Manager):
             return -1
         # Do actual work
         try:
-            return list(getattr(vel_dict, v_or_k)())[0][index]
+            if v_or_k == "keys":
+                return list(getattr(vel_dict, v_or_k)())[index]
+            else:
+                return list(getattr(vel_dict, v_or_k)())[0][index]
         except KeyError:
             logger.error("*****{} encountered KeyError for {}" \
                          .format(funcname, vel_dict))
             return -1
 
-    _spd = partial(_vel_proc, v_or_k="values", index=0, funcname="_spd")
-    _trk = partial(_vel_proc, v_or_k="values", index=1, funcname="_trk")
-    _ts = partial(_vel_proc, v_or_k="keys", index=0, funcname="_ts")
+    _spd = partialmethod(_vel_proc, v_or_k="values", index=0, funcname="_spd")
+    _trk = partialmethod(_vel_proc, v_or_k="values", index=1, funcname="_trk")
+    _ts = partialmethod(_vel_proc, v_or_k="keys", index=0, funcname="_ts")
 
     @staticmethod
     def avg_sin(angles):
@@ -149,6 +152,10 @@ class CoordinateService(Manager):
             s_a_check_list = [self._spd(x) for x in self.vel_array if
                               self._ts(x) >= (now - self.vel_avg_seconds)]
             s_a_check_val = sum(s_a_check_list) / len(s_a_check_list)
+
+            if self.debug:
+                logger.debug("speed: {} - {} - {}".format(s_val, s_i_check_val, s_a_check_val))
+
             alarm = (abs(s_val - s_i_check_val) > self.s_i_max or
                      abs(s_val - s_a_check_val) > self.s_a_max)
             return alarm
@@ -161,6 +168,10 @@ class CoordinateService(Manager):
             # Compute average heading over time
             t_a_check_val = self.avg_sin([self._trk(x) for x in self.vel_array if
                                           self._ts(x) >= (now - self.vel_avg_seconds)])
+
+            if self.debug:
+                logger.debug("track: {} - {} - {}".format(t_val, t_i_check_val, t_a_check_val))
+
             alarm = (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
                      abs(t_val - t_a_check_val) > self.t_a_max)
             return alarm
@@ -189,20 +200,12 @@ class CoordinateService(Manager):
         if msg.__class__ is pynmea2.GGA:  # position msg
             if msg.gps_qual > 0:
                 self.latest_fix = msg
+                if self.debug: logger.debug(msg)
         elif msg.__class__ is pynmea2.VTG:  # velocity msg
+            if self.debug: logger.debug(msg)
             try:
                 speed = msg.spd_over_grnd_kmph
                 track = msg.true_track
-                # TODO REMOVE
-                from random import randint, random
-                if speed > 100:
-                    speed = speed * .1
-                elif speed < 10:
-                    speed = speed * randint(1, 20) / 10.0
-                elif 10 >= speed <= 100:
-                    speed = speed * randint(85, 115) / 100.0
-                if not track:
-                    track = randint(900, 2700) / 10.0
                 if speed and track:
                     # now = timestamp in seconds
                     now = datetime.datetime.timestamp(datetime.datetime.now())
