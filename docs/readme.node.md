@@ -21,8 +21,9 @@ and incompatibility with permissions requirements (capabilities and Bluetooth de
 ~~~bash
 cd /opt
 sudo git clone https://github.com/williamflynt/bt-beacon.git
-chown -R ${USER}:${USER} ./bt-beacon
+sudo chown -R ${USER}:${USER} ./bt-beacon
 cd ./bt-beacon
+git config credential.helper store
 chmod +x ./node_setup.sh
 ./node_setup.sh
 
