@@ -24,7 +24,7 @@ except ImportError as e:
 
 # ScanService needs a node name to publish and configure via PubNub.
 # Let's use a UUID for the device.
-NODE = uuid.getnode()
+NODE = utility.get_pn_uuid()
 
 # The ScanService needs coordinates in meters from an origin to trilaterate.
 # Since this Node class is concerned with true coordinates, we can just set
