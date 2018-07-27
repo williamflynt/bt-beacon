@@ -91,9 +91,9 @@ class CoordinateService(Manager):
             It will be the same for track (below).
             """
             s_i_check_val = [x[0] for x in self.vel_array if
-                             list(x.keys)[0] >= (now - self.vel_inst_seconds)][-1]
+                             list(x.keys())[0] >= (now - self.vel_inst_seconds)][-1]
             s_a_check_list = [x[0] for x in self.vel_array if
-                              list(x.keys)[0] >= (now - self.vel_avg_seconds)]
+                              list(x.keys())[0] >= (now - self.vel_avg_seconds)]
             s_a_check_val = sum(s_a_check_list) / len(s_a_check_list)
             return (abs(s_val - s_i_check_val) > self.s_i_max or
                     abs(s_val - s_a_check_val) > self.s_a_max)
@@ -102,11 +102,11 @@ class CoordinateService(Manager):
         def track_alarm():
             t_val = abs(self.vel_array[0][now][1])  # { now: (speed, track) }
             t_i_check_val = [x[1] for x in self.vel_array if
-                             list(x.keys)[0] >= (now - self.vel_inst_seconds)][-1]
+                             list(x.keys())[0] >= (now - self.vel_inst_seconds)][-1]
             # Compute average heading over time
             t_a_check_val = self.mean_angle(
                 [x[1] for x in self.vel_array if
-                 list(x.keys)[0] >= (now - self.vel_avg_seconds)]
+                 list(x.keys())[0] >= (now - self.vel_avg_seconds)]
             )
             return (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
                     self.hdg_diff(t_val, t_a_check_val) > self.t_a_max)
@@ -120,8 +120,8 @@ class CoordinateService(Manager):
                         logging.WARN("*****Error accessing parent.msg_alarm.", exc_info=True)
         except Exception:
             logging.exception("********************\n"
-                              "      ***velocity error***\n"
-                              "      ********************")
+                              "           ***velocity error***\n"
+                              "           ********************")
 
     # Override onNMEA from parent class to do work
     def onNMEA(self, buffer):
@@ -166,5 +166,5 @@ class CoordinateService(Manager):
             return 0
         except Exception:
             logging.exception("********************\n"
-                              "      **latest_vel error**\n"
-                              "      ********************")
+                              "           **latest_vel error**\n"
+                              "           ********************")
