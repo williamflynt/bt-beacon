@@ -1,4 +1,7 @@
 import datetime
+import logging
+import os
+import serial
 from cmath import rect, phase
 from collections import deque
 from math import radians, degrees
@@ -6,18 +9,37 @@ from math import radians, degrees
 import pynmea2
 from pyubx import Manager
 
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
+GPS_LOG = os.path.join(LOG_DIR, 'gps.log')
+
 
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
                  vel_inst_seconds=10, s_i_max=16.1, s_a_max=16.1,
                  t_i_max=15, t_a_max=30):
-        if isinstance(ser, bytes) or isinstance(ser, str):
-            import serial
-            ser = serial.Serial(ser)
+        if not debug:
+            logging.basicConfig(filename=GPS_LOG, level=logging.INFO)
+        else:
+            logging.basicConfig(filename=GPS_LOG, level=logging.DEBUG)
+
+        logging.info("Beginning GPS service setup...")
+        try:
+            logging.info("Setting up serial connection to GPS device...")
+            if isinstance(ser, bytes) or isinstance(ser, str):
+                ser = serial.Serial(ser)
+        except Exception:
+            logging.exception("********************\n"
+                              "**GPS device error**\n"
+                              "********************")
+            raise
+
+        logging.info("Setting up PyUBX Manager...")
         Manager.__init__(self, ser, debug)
         self._dumpNMEA = False
         self.latest_fix = None
         self.parent = None
+        logging.info("Manager set up. Initializing variables...")
 
         # Initialize values for velocity checking
         # we need enough values to satisfy average requirements - assume 1/sec
@@ -31,6 +53,8 @@ class CoordinateService(Manager):
         self.s_a_max = s_a_max  # speed-average trigger
         self.t_i_max = t_i_max  # track-instant trigger
         self.t_a_max = t_a_max  # track-average trigger
+
+        logging.info("GPS service initialized.")
 
     @staticmethod
     def hdg_diff(init, final):
@@ -87,12 +111,17 @@ class CoordinateService(Manager):
             return (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
                     self.hdg_diff(t_val, t_a_check_val) > self.t_a_max)
 
-        if speed_alarm() or track_alarm():
-            try:
-                self.parent.msg_alarm = 1
-            except AttributeError:
-                # Probably running this standalone
-                pass
+        try:
+            if speed_alarm() or track_alarm():
+                try:
+                    self.parent.msg_alarm = 1
+                except AttributeError:
+                    if self.parent:
+                        logging.WARN("*****Error accessing parent.msg_alarm.", exc_info=True)
+        except Exception:
+            logging.exception("********************\n"
+                              "***velocity error***\n"
+                              "********************")
 
     # Override onNMEA from parent class to do work
     def onNMEA(self, buffer):
@@ -101,13 +130,16 @@ class CoordinateService(Manager):
             if msg.gps_qual > 0:
                 self.latest_fix = msg
         elif msg.__class__ is pynmea2.VTG:  # velocity msg
-            speed = msg.spd_over_grnd_kmph
-            track = msg.true_track
-            if speed and track:
-                # now = timestamp in seconds
-                now = datetime.datetime.timestamp(datetime.datetime.now())
-                self.vel_array.appendleft({now: (speed, track)})
-                self._check_velocity()
+            try:
+                speed = msg.spd_over_grnd_kmph
+                track = msg.true_track
+                if speed and track:
+                    # now = timestamp in seconds
+                    now = datetime.datetime.timestamp(datetime.datetime.now())
+                    self.vel_array.appendleft({now: (speed, track)})
+                    self._check_velocity()
+            except AttributeError:
+                logging.exception("***Bad properties for VTG Sentence***")
         else:
             # Potential to expand to more message types here
             pass
@@ -132,3 +164,7 @@ class CoordinateService(Manager):
                 )
         except IndexError:
             return 0
+        except Exception:
+            logging.exception("********************\n"
+                              "**latest_vel error**\n"
+                              "********************")

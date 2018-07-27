@@ -16,9 +16,11 @@ from pubnub.pubnub import PubNub
 try:
     import app.src.gps as gps
     import app.src.scan as scan
+    import app.src.utility as utility
 except ImportError as e:
     import gps
     import scan
+    import utility
 
 # ScanService needs a node name to publish and configure via PubNub.
 # Let's use a UUID for the device.
@@ -49,7 +51,7 @@ class Node(threading.Thread):
         if not debug:
             logging.basicConfig(filename=NODE_LOG, level=logging.INFO)
         else:
-            logging.basicConfig(level=logging.DEBUG)
+            logging.basicConfig(filename=NODE_LOG, level=logging.DEBUG)
 
         self.interval = max(interval, 1)  # min msg interval of 1 second
 
@@ -90,6 +92,7 @@ class Node(threading.Thread):
         pnconfig = PNConfiguration()
         pnconfig.subscribe_key = sub_key
         pnconfig.publish_key = pub_key
+        pnconfig.uuid = utility.get_pn_uuid()
         pnconfig.ssl = False
         try:
             self.pubnub = PubNub(pnconfig)
@@ -165,25 +168,31 @@ class Node(threading.Thread):
 
         self.expected = now + datetime.timedelta(seconds=self.interval)
 
-        main_msg = {
-            "device_uid": NODE,
-            "message_uid": msg_id,
-            "timestamp": datetime.datetime.now(tz=UTC).isoformat(),
-            "location": location,
-            "is_old_location": is_old_location,
-            "velocity": velocity,
-            "is_old_velocity": is_old_velocity,
-            "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
-                        "devices": list(msgs.keys()),
-                        "raw": msgs},
-            "tlm": {},
-        }
+        try:
+            main_msg = {
+                "device_uid": NODE,
+                "message_uid": msg_id,
+                "timestamp": datetime.datetime.now(tz=UTC).isoformat(),
+                "location": location,
+                "is_old_location": is_old_location,
+                "velocity": velocity,
+                "is_old_velocity": is_old_velocity,
+                "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
+                            "devices": list(msgs.keys()),
+                            "raw": msgs},
+                "tlm": {},
+            }
+        except Exception:
+            logging.exception("********************\n"
+                              "***main_msg error***\n"
+                              "********************")
+            main_msg = None
 
-        if log:
+        if log and main_msg:
             with open(MSG_LOG, 'a') as msg_log:
                 msg_log.writelines([json.dumps(main_msg), "\n"])
 
-        if not self.debug and self.pubnub:
+        if not self.debug and self.pubnub and main_msg:
             self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
@@ -193,6 +202,7 @@ class Node(threading.Thread):
         else:
             logging.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
+                "vel": self.gps_svc.get_latest_velocity(),
                 "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
                             "device_count": len(msgs.keys())},
             }))

@@ -1,75 +1,78 @@
 #!/usr/bin/env python
 
+import logging
 import os
-import pytz
-
-from pubnub.enums import PNStatusCategory
-from pubnub.pnconfiguration import PNConfiguration
-from pubnub.pubnub import PubNub
 from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
 
-# from beacontools import BeaconScanner
+import pytz
 from beacontools.scanner import Monitor
+from pubnub.enums import PNStatusCategory
+from pubnub.pnconfiguration import PNConfiguration
+from pubnub.pubnub import PubNub
+
+try:
+    import app.src.utility as utility
+except ImportError as e:
+    import utility
 
 UTC = pytz.timezone('UTC')
 
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
+SCAN_LOG = os.path.join(LOG_DIR, 'scan.log')
+
 
 class BleMonitor(Monitor):
-    def __init__(self, pub_key=None, sub_key=None, publish=False, node_name=None, node_coords=(0, 0)):
+    def __init__(self, pub_key=None, sub_key=None, publish=False,
+                 node_name=None, node_coords=(0, 0), debug=False):
+        if not debug:
+            logging.basicConfig(filename=SCAN_LOG, level=logging.INFO)
+        else:
+            logging.basicConfig(filename=SCAN_LOG, level=logging.DEBUG)
+
+        logging.info("Beginning BLE scanner setup...")
         Monitor.__init__(self, self._on_receive, 0, None, None)
+        logging.info("Monitor established. Initializing variables...")
         self.publish = publish
         self.node_name = node_name
         self.node_coords = node_coords
-        self.msg_queue = []
         self.parent = None
 
         # For tracking beacons in view of scanner over time
         self.in_view = []
 
         if self.publish:
+            logging.info("Beginning PubNub setup...")
             if not pub_key or not sub_key or not node_name:
-                print("This BLE Scanner is set up for demo only.")
+                logging.warning("Missing required PubNub keys!")
+                logging.warning("Setting up service for demo only...")
                 pub_key = "demo"
                 sub_key = "demo"
                 self.node_name = "demo"
             pnconfig = PNConfiguration()
             pnconfig.subscribe_key = sub_key
             pnconfig.publish_key = pub_key
+            pnconfig.uuid = utility.get_pn_uuid()
             pnconfig.ssl = False
 
             self.pubnub = PubNub(pnconfig)
+            logging.info("PubNub setup complete.")
+        else:
+            logging.info("Skipping PubNub setup (publish==False).")
 
-    def _publish_callback(self, result, status):
+    @staticmethod
+    def _publish_callback(result, status):
         # Check whether request successfully completed or not
         if not status.is_error():
-            del self.msg_queue[0]  # Message successfully published to specified channel.
+            pass  # Message successfully published to specified channel.
         elif status.category == PNStatusCategory.PNAccessDeniedCategory:
-            del self.msg_queue[0]
+            logging.error("PubNub returned AccessDeniedCategory on publish.")
         elif status.category == PNStatusCategory.PNBadRequestCategory:
-            # Maybe bad keys, or an SDK error
-            del self.msg_queue[0]
+            logging.error("PubNub returned BadRequestCategory on publish.")
         elif status.category == PNStatusCategory.PNTimeoutCategory:
-            # Republish with exponential backoff
-            msg_tuple = self.msg_queue[0]
-            message = msg_tuple[0]
-            timestamp = msg_tuple[1]
-            retry_time = msg_tuple[2]
-
-            while datetime.now() > retry_time:
-                sleep(0.5)
-
-            del self.msg_queue[0]
-
-            now = datetime.now()
-            retry_time = now + timedelta(seconds=(now - timestamp).total_seconds())
-            self.msg_queue.append((message, timestamp, retry_time))
-
-            self.pubnub.publish() \
-                .channel('raw_channel') \
-                .message(message) \
-                .async(self._publish_callback)
+            logging.error("PubNub publish request timed out.")
 
     def _on_receive(self, bt_addr, rssi, packet, properties):
         now = datetime.now(UTC)
@@ -94,8 +97,6 @@ class BleMonitor(Monitor):
                        "{}".format(properties),
                        now.isoformat(),
                        self.node_name]
-            retry_time = now + timedelta(seconds=5)
-            self.msg_queue.append((message, now, retry_time))
 
             self.pubnub.publish() \
                 .channel('raw_channel') \
