@@ -42,7 +42,7 @@ UTC = pytz.timezone('UTC')
 
 logging.basicConfig(filename=os.path.join(LOG_DIR,
                                           'debug.log'),
-                    level=logging.INFO)
+                    level=logging.DEBUG)
 logger = logging.getLogger('node')
 logfile = logging.FileHandler(NODE_LOG)
 logger.addHandler(logfile)
@@ -129,17 +129,18 @@ class Node(threading.Thread):
                 status_to_remove="retrieved",
                 new_status='published'
             )
+            logging.debug("Publish success")
         elif status.category == PNStatusCategory.PNAccessDeniedCategory:
             # RESTART BOTTLE FOR CONFIG IF STOPPED
             # Store message
-            pass
+            logger.warning("Publish failed with PNAccessDenied")
         elif status.category == PNStatusCategory.PNBadRequestCategory:
             # Maybe bad keys, or an SDK error
             # Store message
-            pass
+            logger.warning("Publish failed with PNABadRequestCategory")
         elif status.category == PNStatusCategory.PNTimeoutCategory:
             # Store message and retry later
-            pass
+            logger.warning("Publish failed with PNTimeoutCategory")
 
     def _log_and_publish(self, log=True):
         # Get these ASAP to make old message detection more accurate
@@ -159,8 +160,10 @@ class Node(threading.Thread):
 
         if location:
             location = list(location)
+            logging.debug("Loc Old Test: {}  versus {}".format(location[3], self.expected.time()))
             is_old_location = int(location[3] > self.expected.time() or
                                   location == self.last_loc)
+            logging.debug("Result: {}".format(is_old_location))
             location[3] = location[3].isoformat()  # %H:%M:%S
             self.last_loc = location
         else:
@@ -168,16 +171,18 @@ class Node(threading.Thread):
 
         if velocity:
             velocity = list(velocity)
-            is_old_velocity = int(velocity[3] > self.expected or
+            logging.debug("Vel Old Test: {}  versus {}".format(velocity[2], self.expected.time()))
+            is_old_velocity = int(velocity[2] > self.expected or
                                   velocity == self.last_vel)
-            velocity[3] = velocity[3].time().isoformat()  # %H:%M:%S
+            logging.debug("Result: {}".format(is_old_velocity))
+            velocity[2] = velocity[2].time().isoformat()  # %H:%M:%S
             self.last_vel = velocity
         else:
             is_old_velocity = 0
 
         self.expected = now + \
                         datetime.timedelta(seconds=self.interval) + \
-                        datetime.timedelta(seconds=1)
+                        datetime.timedelta(seconds=2)
 
         try:
             main_msg = {
@@ -195,8 +200,8 @@ class Node(threading.Thread):
             }
         except Exception:
             logger.exception("********************\n"
-                             "           ***main_msg error***\n"
-                             "           ********************")
+                             "***main_msg error***\n"
+                             "********************")
             main_msg = None
 
         if log and main_msg:

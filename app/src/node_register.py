@@ -84,6 +84,7 @@ def getkeys():
         sub = content['sub']
         with open(os.path.join(FILE_DIR, '..', '..', 'pubnub.env'), 'wb') as envfile:
             envfile.writelines([bytes(s.encode('utf-8')) for s in [
+                "\n",
                 "PUB_KEY={}".format(pub),
                 "\n",
                 "SUB_KEY={}".format(sub)
