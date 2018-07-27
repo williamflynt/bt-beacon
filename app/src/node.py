@@ -163,7 +163,7 @@ class Node(threading.Thread):
 
         if location:
             location = list(location)
-            logging.debug("Loc Old Test: {}  versus {}".format(location[3], self.expected.time()))
+            logging.debug("Loc Old Test: {} (passed)  versus {} (expected)".format(location[3], self.expected.time()))
             is_old_location = int(location[3] > self.expected.time() or
                                   location == self.last_loc)
             logging.debug("Result: {}".format(is_old_location))
@@ -174,7 +174,7 @@ class Node(threading.Thread):
 
         if velocity:
             velocity = list(velocity)
-            logging.debug("Vel Old Test: {}  versus {}".format(velocity[2], self.expected.time()))
+            logging.debug("Vel Old Test: {} (passed)  versus {} (expected)".format(velocity[2], self.expected.time()))
             is_old_velocity = int(velocity[2] > self.expected or
                                   velocity == self.last_vel)
             logging.debug("Result: {}".format(is_old_velocity))

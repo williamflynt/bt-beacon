@@ -65,7 +65,7 @@ def get_pn_uuid(set_uuid=True, override=False, uuid_key="PN_UUID"):
             return 0
 
     if set_uuid:
-        export_line = "export {}={}\n".format(uuid_key, uuid)
+        export_line = "\nexport {}={}\n".format(uuid_key, uuid)
         logger.debug("Putting UUID in environ")
         os.environ[uuid_key] = uuid  # non-persistent but cheap
         logger.debug("Getting executable python path")
@@ -91,7 +91,7 @@ def get_pn_uuid(set_uuid=True, override=False, uuid_key="PN_UUID"):
         if os.path.isfile(env):
             logger.debug("Found pubnub.env")
             write_count += write_uuid(env,
-                                      "{}={}\n".format(uuid_key, uuid))
+                                      "\n{}={}\n".format(uuid_key, uuid))
 
         logger.debug("Checking writes...")
         if not write_count:
