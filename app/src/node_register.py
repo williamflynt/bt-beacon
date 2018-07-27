@@ -119,5 +119,20 @@ def getkeys():
         """.format(success_msg)
     )
 
+@route('/logmon')
+def logmon():
+    return template(
+        """
+        <html>
+        <head><title>Log Monitor</title></head>
+        
+        <body>
+            <h1>Log Monitor</h1>
+            <p style="color: #777;">{node_id}</p>
+        </body>
+        </html>
+        """.format(node_id=NODE_ID)
+    )
+
 
 run(host='0.0.0.0', port=8765)

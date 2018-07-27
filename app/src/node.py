@@ -136,8 +136,11 @@ class Node(threading.Thread):
             logger.warning("Publish failed with PNAccessDenied")
         elif status.category == PNStatusCategory.PNBadRequestCategory:
             # Maybe bad keys, or an SDK error
-            # Store message
-            logger.warning("Publish failed with PNABadRequestCategory")
+            import pickle
+            pickle_path = os.path.join(FILE_DIR, "status.p")
+            with open(pickle_path, "wb") as pfile:
+                pickle.dump(status, pfile)
+            logger.warning("Publish failed with PNABadRequestCategory. Load status object from {}".format(pickle_path))
         elif status.category == PNStatusCategory.PNTimeoutCategory:
             # Store message and retry later
             logger.warning("Publish failed with PNTimeoutCategory")
