@@ -175,7 +175,9 @@ class Node(threading.Thread):
         else:
             is_old_velocity = 0
 
-        self.expected = now + datetime.timedelta(seconds=self.interval)
+        self.expected = now + \
+                        datetime.timedelta(seconds=self.interval) + \
+                        datetime.timedelta(seconds=1)
 
         try:
             main_msg = {
