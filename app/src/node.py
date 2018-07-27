@@ -29,10 +29,11 @@ NODE = uuid.getnode()
 #   0, 0 until we refactor ScanService to use something else.
 NODE_COORDS = (0, 0)
 
-MSG_LOG = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'msg_log_{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M"))
-)
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
+STR_DATE = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+MSG_LOG = os.path.join(LOG_DIR, 'msg_log_{}'.format(STR_DATE))
+NODE_LOG = os.path.join(LOG_DIR, "node-{}.log".format(STR_DATE))
 
 # We work in UTC
 UTC = pytz.timezone('UTC')
@@ -46,7 +47,7 @@ class Node(threading.Thread):
 
         # Set up logging to file if debug is False
         if not debug:
-            logging.basicConfig(filename='node.log', level=logging.INFO)
+            logging.basicConfig(filename=NODE_LOG, level=logging.INFO)
         else:
             logging.basicConfig(level=logging.DEBUG)
 

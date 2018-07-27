@@ -13,10 +13,13 @@ sudo apt-get -y install bluez bluez-hcidump python3-dev libbluetooth-dev libcap2
 sudo apt-get -y install python3-venv
 
 
+# Make log dir, etc
+mkdir ${DIR}/logs
+
 # Create and activate our virtual environment
 cd $DIR
-python3 -m venv .
-source $DIR/bin/activate
+python3 -m venv ${DIR}/venv
+source ${DIR}/venv/bin/activate
 
 
 # Set permissions for GPS dongle
