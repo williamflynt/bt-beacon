@@ -127,8 +127,16 @@ class CoordinateService(Manager):
         :param angles: list A list of angles in degrees
         :return: float Average sine value for the list
         """
-        avg = sum(np.sin(np.radians(angles))) / len(angles)
-        return round(avg, 4)
+        if isinstance(angles, float):
+            try:
+                return np.sin(np.radians(angles))
+            except:
+                logger.exception("*****Error in avg_sin method with arg: {}" \
+                                 .format(angles))
+                return 0
+        else:
+            avg = sum(np.sin(np.radians(angles))) / len(angles)
+            return round(avg, 4)
 
     def set_tamax(self, new_max):  # Alternative is self.t_a_max as property
         try:
@@ -210,10 +218,6 @@ class CoordinateService(Manager):
             try:
                 speed = msg.spd_over_grnd_kmph
                 track = msg.true_track
-                if not speed or not track:  # TODO REVMOVE THIS PLZ
-                    from random import randint
-                    speed = 50 + randint(-25, 25)
-                    track = track or 180 + randint(-40, 40)
                 if speed and track:
                     # now = timestamp in seconds
                     now = datetime.datetime.timestamp(datetime.datetime.now(tz=UTC))
