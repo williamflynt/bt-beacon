@@ -127,16 +127,8 @@ class CoordinateService(Manager):
         :param angles: list A list of angles in degrees
         :return: float Average sine value for the list
         """
-        if isinstance(angles, float):
-            try:
-                return np.sin(np.radians(angles))
-            except:
-                logger.exception("*****Error in avg_sin method with arg: {}" \
-                                 .format(angles))
-                return 0
-        else:
-            avg = sum(np.sin(np.radians(angles))) / len(angles)
-            return round(avg, 4)
+        avg = sum(np.sin(np.radians(angles))) / len(angles)
+        return round(avg, 4)
 
     def set_tamax(self, new_max):  # Alternative is self.t_a_max as property
         try:
@@ -186,13 +178,14 @@ class CoordinateService(Manager):
                 logger.debug("track: {} - {} - {}".format(t_val, t_i_check_val, t_a_check_val))
 
             alarm = (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
-                     abs(self.avg_sin(t_val) - t_a_check_val) > self.t_a_max)
+                     abs(np.sin(np.radians(t_val)) - t_a_check_val) > self.t_a_max)
             return alarm
 
         try:
             # speed at rest 0-2.2
             if speed_alarm() or (self.spd_holder > 2.2 and track_alarm()):
                 try:
+                    logger.info("GPS module setting message alarm!")
                     self.parent.msg_alarm = 1
                 except AttributeError:
                     if self.parent:
