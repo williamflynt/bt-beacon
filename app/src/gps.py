@@ -49,6 +49,7 @@ class CoordinateService(Manager):
         Manager.__init__(self, ser, debug)
         self._dumpNMEA = False
         self.latest_fix = None
+        self.latest_vel = None
         self.parent = None
         logger.info("Manager set up. Initializing variables...")
 
@@ -176,6 +177,7 @@ class CoordinateService(Manager):
             if speed_alarm() or (self.spd_holder > 2.2 and track_alarm()):
                 try:
                     self.parent.msg_alarm = 1  # TODO: Test if this works directly w/pubnub
+                    self.latest_vel = self._constr_vel()
                     self.vel_array.clear()
                 except:
                     logger.exception("***Error getting velocity alarms")
@@ -221,6 +223,12 @@ class CoordinateService(Manager):
             return 0
 
     def get_latest_velocity(self):
+        if self.latest_vel is not None:
+            return self.latest_vel
+        else:
+            return 0
+
+    def _constr_vel(self):
         try:
             for k, v in self.vel_array[0].items():
                 return (
@@ -231,5 +239,6 @@ class CoordinateService(Manager):
             return 0
         except Exception:
             logger.exception("********************\n"
-                             "**latest_vel error**\n"
+                             "**constr_vel error**\n"
                              "********************")
+            return 0
