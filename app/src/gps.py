@@ -3,6 +3,7 @@ import logging
 import os
 from collections import deque
 from functools import partialmethod
+from random import randint
 
 import numpy as np
 import pynmea2
@@ -26,7 +27,7 @@ logger.addHandler(logfile)
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
                  vel_inst_seconds=10, s_i_max=32.2, s_a_max=32.2,
-                 t_i_max=20, t_a_max=30):
+                 t_i_max=20, t_a_max=30, gen_fake_vel=False):
         if not debug:
             logger.setLevel(logging.INFO)
             logfile.setLevel(logging.INFO)
@@ -52,6 +53,8 @@ class CoordinateService(Manager):
         self.latest_vel = None
         self.parent = None
         logger.info("Manager set up. Initializing variables...")
+
+        self.gen_fake_vel = gen_fake_vel
 
         # Initialize values for velocity checking
         # we need enough values to satisfy average requirements - assume 1/sec
@@ -200,6 +203,9 @@ class CoordinateService(Manager):
             try:
                 speed = msg.spd_over_grnd_kmph
                 track = msg.true_track
+                if self.gen_fake_vel:  # To test other stuff
+                    speed = 50 + randint(-25, 25)
+                    track = 180 + randint(-35, 35)
                 if speed and track:
                     # now = timestamp in seconds
                     now = datetime.datetime.timestamp(datetime.datetime.now(tz=UTC))
@@ -233,7 +239,7 @@ class CoordinateService(Manager):
             for k, v in self.vel_array[0].items():
                 return (
                     v[0], v[1],  # speed in kph, track direction (true)
-                    datetime.datetime.fromtimestamp(k)  # Python DT obj
+                    datetime.datetime.fromtimestamp(k, tz=UTC)  # Python DT obj
                 )
         except IndexError:
             return 0

@@ -169,7 +169,7 @@ class Node(threading.Thread):
                                   velocity == self.last_vel)
             logging.debug("Result: {}".format(is_old_velocity))
             self.last_vel = velocity
-            velocity[2] = velocity[2].time().isoformat()  # %H:%M:%S
+            velocity[2] = velocity[2].time().strftime('%H:%M:%S')  # Trim microseconds
         else:
             is_old_velocity = 0
 
