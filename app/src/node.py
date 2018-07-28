@@ -35,11 +35,6 @@ STR_DATE = datetime.datetime.now().strftime("%y%m%d_%H%M")
 MSG_LOG = os.path.join(LOG_DIR, 'messages-{}.log'.format(STR_DATE))
 NODE_LOG = os.path.join(LOG_DIR, "node.log")
 
-# We work in UTC
-
-logging.basicConfig(filename=os.path.join(LOG_DIR,
-                                          'debug.log'),
-                    level=logging.DEBUG)
 logger = logging.getLogger('node')
 logfile = logging.FileHandler(NODE_LOG)
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:: %(message)s')
@@ -134,6 +129,8 @@ class Node(threading.Thread):
             logger.warning("Publish failed with PNTimeoutCategory")
 
     def _log_and_publish(self, log=True):
+        logging.debug("Publishing a message...")
+
         # Get these ASAP to make old message detection more accurate
         location = self.gps_svc.get_latest_fix()
         velocity = self.gps_svc.get_latest_velocity()
@@ -146,12 +143,11 @@ class Node(threading.Thread):
         msgs = self.scan_svc.retrieve_in_view(reset=True,
                                               set_status='retrieved')
 
+        logging.debug("--setting msg vars")
         if location:
             location = list(location)
-            logging.debug("Loc Old Test: {} (passed)  versus {} (expected)".format(location[3], self.expected.time()))
             is_old_location = int(sloppy_smaller(location[3], self.expected) or
                                   location == self.last_loc)
-            logging.debug("Result: {}".format(is_old_location))
             self.last_loc = location
             location[3] = location[3].isoformat()  # %H:%M:%S
         else:
@@ -159,10 +155,8 @@ class Node(threading.Thread):
 
         if velocity:  # velocity contains a full datetime
             velocity = list(velocity)
-            logging.debug("Vel Old Test: {} (passed)  versus {} (expected)".format(velocity[2], self.expected.time()))
             is_old_velocity = int(sloppy_smaller(velocity[2], self.expected) or
                                   velocity == self.last_vel)
-            logging.debug("Result: {}".format(is_old_velocity))
             self.last_vel = velocity
             velocity[2] = velocity[2].time().strftime('%H:%M:%S')  # Trim microseconds
         else:
@@ -172,6 +166,7 @@ class Node(threading.Thread):
                         datetime.timedelta(seconds=self.interval) + \
                         datetime.timedelta(seconds=2)
 
+        logging.debug("--contructing")
         try:
             main_msg = {
                 "device_uid": NODE,
@@ -197,6 +192,7 @@ class Node(threading.Thread):
                              "********************")
             main_msg = None
 
+        logging.debug("--pushing")
         if not self.debug and self.pubnub and main_msg:
             self.pubnub.publish() \
                 .channel('node_raw') \
@@ -211,6 +207,7 @@ class Node(threading.Thread):
                 "in_view": {"msg_count": sum([len(v) for k, v in msgs.items()]),
                             "device_count": len(msgs.keys())},
             }))
+        logging.debug("--published.")
 
     def run(self):
         # First we start our supporting threads

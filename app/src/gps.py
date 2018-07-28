@@ -21,6 +21,8 @@ GPS_LOG = os.path.join(LOG_DIR, 'gps.log')
 
 logger = logging.getLogger('gps')
 logfile = logging.FileHandler(GPS_LOG)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:: %(message)s')
+logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
 
@@ -30,10 +32,8 @@ class CoordinateService(Manager):
                  t_i_max=20, t_a_max=30, gen_fake_vel=False):
         if not debug:
             logger.setLevel(logging.INFO)
-            logfile.setLevel(logging.INFO)
         else:
             logger.setLevel(logging.DEBUG)
-            logfile.setLevel(logging.DEBUG)
 
         logger.info("Beginning GPS service setup...")
         try:

@@ -22,6 +22,8 @@ SCAN_LOG = os.path.join(LOG_DIR, 'scan.log')
 
 logger = logging.getLogger('scan')
 logfile = logging.FileHandler(SCAN_LOG)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:: %(message)s')
+logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
 

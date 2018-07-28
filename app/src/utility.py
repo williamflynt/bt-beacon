@@ -19,6 +19,8 @@ UTIL_LOG = os.path.join(LOG_DIR, 'utility.log')
 
 logger = logging.getLogger('util')
 logfile = logging.FileHandler(UTIL_LOG)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:: %(message)s')
+logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
 
