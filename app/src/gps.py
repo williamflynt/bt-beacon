@@ -97,11 +97,11 @@ class CoordinateService(Manager):
         """
         # Check errors / log
         if not isinstance(vel_dict, dict):
-            logger.error("*****{} was passed a non-dict parameter") \
+            logger.error("***{} was passed a non-dict parameter") \
                 .format(funcname)
             return -1
         if v_or_k not in ["values", "keys"]:
-            logger.error("*****{} was passed {}, not 'keys' or 'values'") \
+            logger.error("***{} was passed {}, not 'keys' or 'values'") \
                 .format(funcname, v_or_k)
             return -1
         # Do actual work
@@ -111,7 +111,7 @@ class CoordinateService(Manager):
             else:
                 return list(getattr(vel_dict, v_or_k)())[0][index]
         except KeyError:
-            logger.error("*****{} encountered KeyError for {}" \
+            logger.error("***{} encountered KeyError for {}" \
                          .format(funcname, vel_dict))
             return -1
 
@@ -143,7 +143,6 @@ class CoordinateService(Manager):
         except IndexError:
             return
 
-        # Check speed for instant diff and average diff
         def speed_alarm():
             s_val = self._spd(self.vel_array[0])  # { now: (speed, track) }
             self.spd_holder = s_val
@@ -157,15 +156,10 @@ class CoordinateService(Manager):
             s_a_check_list = [self._spd(x) for x in self.vel_array if
                               self._ts(x) >= (now - self.vel_avg_seconds)]
             s_a_check_val = sum(s_a_check_list) / len(s_a_check_list)
-
-            if self.debug:
-                logger.debug("speed: {} - {} - {}".format(s_val, s_i_check_val, s_a_check_val))
-
             alarm = (abs(s_val - s_i_check_val) > self.s_i_max or
                      abs(s_val - s_a_check_val) > self.s_a_max)
             return alarm
 
-        # Check speed for instant diff and average diff
         def track_alarm():
             t_val = self._trk(self.vel_array[0])  # { now: (speed, track) }
             t_i_check_val = [self._trk(x) for x in self.vel_array if
@@ -173,10 +167,6 @@ class CoordinateService(Manager):
             # Compute average heading over time
             t_a_check_val = self.avg_sin([self._trk(x) for x in self.vel_array if
                                           self._ts(x) >= (now - self.vel_avg_seconds)])
-
-            if self.debug:
-                logger.debug("track: {} - {} - {}".format(t_val, t_i_check_val, t_a_check_val))
-
             alarm = (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
                      abs(np.sin(np.radians(t_val)) - t_a_check_val) > self.t_a_max)
             return alarm
@@ -185,14 +175,10 @@ class CoordinateService(Manager):
             # speed at rest 0-2.2
             if speed_alarm() or (self.spd_holder > 2.2 and track_alarm()):
                 try:
-                    logger.info("GPS module setting message alarm!")
-                    self.parent.msg_alarm = 1
-                    logger.info("Alarm set. Showing value {}.".format(self.parent.msg_alarm))
-                except AttributeError:
-                    if self.parent:
-                        logger.warning("*****Error accessing parent.msg_alarm.", exc_info=True)
-                except IndexError:
-                    logger.warning("*****IndexError trying to get velocity alarms")
+                    self.parent.msg_alarm = 1  # TODO: Test if this works directly w/pubnub
+                    self.vel_array.clear()
+                except:
+                    logger.exception("***Error getting velocity alarms")
         except KeyError:
             logger.exception("********************\n"
                              "***velocity error***\n"

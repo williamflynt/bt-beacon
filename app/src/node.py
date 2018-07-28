@@ -43,14 +43,18 @@ logging.basicConfig(filename=os.path.join(LOG_DIR,
                     level=logging.DEBUG)
 logger = logging.getLogger('node')
 logfile = logging.FileHandler(NODE_LOG)
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(name)s:: %(message)s')
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s:: %(message)s')
 logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
 
 class Node(threading.Thread):
     def __init__(self, gps_device, pub_key=None, sub_key=None, interval=300, debug=False):
-        logger.setLevel(logging.INFO)
+        if not debug:
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.DEBUG)
+        logger.info("***Setting up Node")
 
         self.parent = current_thread()
 
@@ -129,11 +133,7 @@ class Node(threading.Thread):
             logger.warning("Publish failed with PNAccessDenied")
         elif status.category == PNStatusCategory.PNBadRequestCategory:
             # Maybe bad keys, or an SDK error
-            import pickle
-            pickle_path = os.path.join(FILE_DIR, "status.p")
-            with open(pickle_path, "wb") as pfile:
-                pickle.dump(status, pfile)
-            logger.warning("Publish failed with PNABadRequestCategory. Load status object from {}".format(pickle_path))
+            logger.warning("Publish failed with PNABadRequestCategory")
         elif status.category == PNStatusCategory.PNTimeoutCategory:
             # Store message and retry later
             logger.warning("Publish failed with PNTimeoutCategory")
@@ -142,19 +142,14 @@ class Node(threading.Thread):
         # Get these ASAP to make old message detection more accurate
         location = self.gps_svc.get_latest_fix()
         velocity = self.gps_svc.get_latest_velocity()
-        logger.debug("got location {} and velocity {}".format(location, velocity))
 
         now = datetime.datetime.now(tz=UTC)
         if not self.expected:
-            self.expected = now + datetime.timedelta(seconds=1)
+            self.expected = now + datetime.timedelta(seconds=30)
 
         msg_id = str(uuid.uuid1())
-        # TODO: We would like to set a UUID-type status here but...
-        # the data in the message/meta/etc isn't accessible to
-        # our _publish_callback method (at least that I can find).
         msgs = self.scan_svc.retrieve_in_view(reset=True,
                                               set_status='retrieved')
-        logger.debug("got in_view messages")
 
         if location:
             location = list(location)
@@ -178,13 +173,9 @@ class Node(threading.Thread):
         else:
             is_old_velocity = 0
 
-        logger.debug("initialized msg vars")
-
         self.expected = now + \
                         datetime.timedelta(seconds=self.interval) + \
                         datetime.timedelta(seconds=2)
-
-        logger.debug("new expected msg time set - constructing message")
 
         try:
             main_msg = {
@@ -200,11 +191,11 @@ class Node(threading.Thread):
                             "raw": msgs},
                 "tlm": {},
             }
-            logger.debug("message constructed.")
+
             if log:
                 with open(MSG_LOG, 'a') as msg_log:
                     msg_log.writelines([json.dumps(main_msg), "\n"])
-            logger.debug("msg written to file")
+
         except Exception:
             logger.exception("********************\n"
                              "***main_msg error***\n"
@@ -212,14 +203,12 @@ class Node(threading.Thread):
             main_msg = None
 
         if not self.debug and self.pubnub and main_msg:
-            logger.debug("publishing main_msg.")
             self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
                 .should_store(True) \
                 .meta({"msg_id": msg_id}) \
                 .async(self._publish_callback)
-            logger.debug("msg publish task created.")
         else:
             logger.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
@@ -234,10 +223,10 @@ class Node(threading.Thread):
         self.gps_svc.start()
         # Get node coordinates for the scan service as needed here
         logger.info("Getting the first GPS fix")
-        # # Wait for fix or a set of fixes w/ a max timeout
+
         timeout = 10
         clock = timer()
-        while True:
+        while True:  # Wait for fix w/ a max timeout
             time.sleep(0.5)
             if timer() - clock > timeout:
                 logger.info("GPS fix timeout - moving on")
@@ -253,12 +242,12 @@ class Node(threading.Thread):
         clock = timer()  # Start a clock and publish a message on a timer
         self.msg_alarm = 1  # Set to 1 to start with a message
 
-        # old_mod and new_mod get compared. Every X seconds (where X is
-        #   the interval) we will notice the new_mod fall below the
-        #   old_mod (ie: we passed another factor of interval). That's
-        #   when we should fire the message off! This method is nice
-        #   because it doesn't wander over time like threading.Timer or
-        #   a simple implementation of time.sleep.
+        """old_mod and new_mod get compared. Every X seconds (where X is
+        the interval) we will notice the new_mod fall below the
+        old_mod (ie: we passed another factor of interval). That's
+        when we should fire the message off! This method is nice
+        because it doesn't wander over time like threading.Timer or
+        a simple implementation of time.sleep."""
         old_mod = 0.0
         while self.switch:
             elapsed = timer() - clock
@@ -268,9 +257,7 @@ class Node(threading.Thread):
             old_mod = new_mod
 
             if self.msg_alarm and elapsed >= 1:  # max of ~1 msg/sec
-                logger.debug("Sending message @ {} elapsed".format(elapsed))
                 self._log_and_publish()
-                logger.debug("Finished call to _log_and_publish")
                 # reset for a fresh check - do it first to let clock build
                 # messages come at various times; reset now vs. at mod check
                 clock = timer()
