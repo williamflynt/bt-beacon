@@ -43,17 +43,14 @@ logging.basicConfig(filename=os.path.join(LOG_DIR,
                     level=logging.DEBUG)
 logger = logging.getLogger('node')
 logfile = logging.FileHandler(NODE_LOG)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(name)s:: %(message)s')
+logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
 
 class Node(threading.Thread):
     def __init__(self, gps_device, pub_key=None, sub_key=None, interval=300, debug=False):
-        if not debug:
-            logger.setLevel(logging.INFO)
-            logfile.setLevel(logging.INFO)
-        else:
-            logger.setLevel(logging.DEBUG)
-            logfile.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
 
         self.parent = current_thread()
 
@@ -127,9 +124,7 @@ class Node(threading.Thread):
                 status_to_remove="retrieved",
                 new_status='published'
             )
-            logging.debug("Publish success")
         elif status.category == PNStatusCategory.PNAccessDeniedCategory:
-            # RESTART BOTTLE FOR CONFIG IF STOPPED
             # Store message
             logger.warning("Publish failed with PNAccessDenied")
         elif status.category == PNStatusCategory.PNBadRequestCategory:
@@ -147,6 +142,7 @@ class Node(threading.Thread):
         # Get these ASAP to make old message detection more accurate
         location = self.gps_svc.get_latest_fix()
         velocity = self.gps_svc.get_latest_velocity()
+        logger.debug("got location {} and velocity {}".format(location, velocity))
 
         now = datetime.datetime.now(tz=UTC)
         if not self.expected:
@@ -158,6 +154,7 @@ class Node(threading.Thread):
         # our _publish_callback method (at least that I can find).
         msgs = self.scan_svc.retrieve_in_view(reset=True,
                                               set_status='retrieved')
+        logger.debug("got in_view messages")
 
         if location:
             location = list(location)
@@ -165,8 +162,8 @@ class Node(threading.Thread):
             is_old_location = int(sloppy_smaller(location[3], self.expected) or
                                   location == self.last_loc)
             logging.debug("Result: {}".format(is_old_location))
-            location[3] = location[3].isoformat()  # %H:%M:%S
             self.last_loc = location
+            location[3] = location[3].isoformat()  # %H:%M:%S
         else:
             is_old_location = 0
 
@@ -176,14 +173,18 @@ class Node(threading.Thread):
             is_old_velocity = int(sloppy_smaller(velocity[2], self.expected) or
                                   velocity == self.last_vel)
             logging.debug("Result: {}".format(is_old_velocity))
-            velocity[2] = velocity[2].time().isoformat()  # %H:%M:%S
             self.last_vel = velocity
+            velocity[2] = velocity[2].time().isoformat()  # %H:%M:%S
         else:
             is_old_velocity = 0
+
+        logger.debug("initialized msg vars")
 
         self.expected = now + \
                         datetime.timedelta(seconds=self.interval) + \
                         datetime.timedelta(seconds=2)
+
+        logger.debug("new expected msg time set - constructing message")
 
         try:
             main_msg = {
@@ -199,23 +200,26 @@ class Node(threading.Thread):
                             "raw": msgs},
                 "tlm": {},
             }
+            logger.debug("message constructed.")
+            if log:
+                with open(MSG_LOG, 'a') as msg_log:
+                    msg_log.writelines([json.dumps(main_msg), "\n"])
+            logger.debug("msg written to file")
         except Exception:
             logger.exception("********************\n"
                              "***main_msg error***\n"
                              "********************")
             main_msg = None
 
-        if log and main_msg:
-            with open(MSG_LOG, 'a') as msg_log:
-                msg_log.writelines([json.dumps(main_msg), "\n"])
-
         if not self.debug and self.pubnub and main_msg:
+            logger.debug("publishing main_msg.")
             self.pubnub.publish() \
                 .channel('node_raw') \
                 .message(main_msg) \
                 .should_store(True) \
                 .meta({"msg_id": msg_id}) \
                 .async(self._publish_callback)
+            logger.debug("msg publish task created.")
         else:
             logger.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),
@@ -264,11 +268,13 @@ class Node(threading.Thread):
             old_mod = new_mod
 
             if self.msg_alarm and elapsed >= 1:  # max of ~1 msg/sec
+                logger.debug("Sending message @ {} elapsed".format(elapsed))
+                self._log_and_publish()
+                logger.debug("Finished call to _log_and_publish")
                 # reset for a fresh check - do it first to let clock build
                 # messages come at various times; reset now vs. at mod check
                 clock = timer()
                 self.msg_alarm = 0
-                self._log_and_publish()
                 old_mod = 0.0  # reset at latest possible
 
             time.sleep(0.1)

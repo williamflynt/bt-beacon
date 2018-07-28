@@ -25,8 +25,8 @@ logger.addHandler(logfile)
 
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
-                 vel_inst_seconds=10, s_i_max=16.1, s_a_max=16.1,
-                 t_i_max=15, t_a_max=30):
+                 vel_inst_seconds=10, s_i_max=32.2, s_a_max=32.2,
+                 t_i_max=20, t_a_max=30):
         if not debug:
             logger.setLevel(logging.INFO)
             logfile.setLevel(logging.INFO)
@@ -187,6 +187,7 @@ class CoordinateService(Manager):
                 try:
                     logger.info("GPS module setting message alarm!")
                     self.parent.msg_alarm = 1
+                    logger.info("Alarm set. Showing value {}.".format(self.parent.msg_alarm))
                 except AttributeError:
                     if self.parent:
                         logger.warning("*****Error accessing parent.msg_alarm.", exc_info=True)
