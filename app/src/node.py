@@ -5,7 +5,6 @@ import os
 import threading
 import time
 import uuid
-from threading import current_thread
 from timeit import default_timer as timer
 
 from pubnub.enums import PNStatusCategory
@@ -55,8 +54,6 @@ class Node(threading.Thread):
         else:
             logger.setLevel(logging.DEBUG)
         logger.info("***Setting up Node")
-
-        self.parent = current_thread()
 
         threading.Thread.__init__(self)
         self.daemon = False
@@ -112,12 +109,10 @@ class Node(threading.Thread):
         logger.info("Setting up GPS service")
         self.gps_svc = gps.CoordinateService(gps_device, debug=debug)
         self.gps_svc.daemon = True
-        self.gps_svc.parent = current_thread()
 
         logger.info("Setting up BLE scanning service")
         self.scan_svc = scan.BleMonitor(debug=debug)
         self.scan_svc.daemon = True
-        self.scan_svc.parent = current_thread()
 
         logger.info("Node initialized - ready for start")
 
@@ -256,12 +251,16 @@ class Node(threading.Thread):
                 self.msg_alarm = 1
             old_mod = new_mod
 
-            if self.msg_alarm and elapsed >= 1:  # max of ~1 msg/sec
+            if (self.msg_alarm or
+                self.gps_svc.msg_alarm or
+                self.scan_svc.msg_alarm) and elapsed >= 1:  # max of ~1 msg/sec
                 self._log_and_publish()
                 # reset for a fresh check - do it first to let clock build
                 # messages come at various times; reset now vs. at mod check
                 clock = timer()
                 self.msg_alarm = 0
+                self.gps_svc.msg_alarm = 0
+                self.scan_svc.msg_alarm = 0
                 old_mod = 0.0  # reset at latest possible
 
             time.sleep(0.1)

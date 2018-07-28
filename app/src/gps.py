@@ -51,7 +51,7 @@ class CoordinateService(Manager):
         self._dumpNMEA = False
         self.latest_fix = None
         self.latest_vel = None
-        self.parent = None
+        self.msg_alarm = 0
         logger.info("Manager set up. Initializing variables...")
 
         self.gen_fake_vel = gen_fake_vel
@@ -179,7 +179,7 @@ class CoordinateService(Manager):
             # speed at rest 0-2.2
             if speed_alarm() or (self.spd_holder > 2.2 and track_alarm()):
                 try:
-                    self.parent.msg_alarm = 1  # TODO: Test if this works directly w/pubnub
+                    self.msg_alarm = 1
                     self.latest_vel = self._constr_vel()
                     self.vel_array.clear()
                 except:

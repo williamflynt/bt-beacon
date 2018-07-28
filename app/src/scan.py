@@ -41,7 +41,7 @@ class BleMonitor(Monitor):
         self.publish = publish
         self.node_name = node_name
         self.node_coords = node_coords
-        self.parent = None
+        self.msg_alarm = 0
 
         # For tracking beacons in view of scanner over time
         self.in_view = []
