@@ -9,6 +9,11 @@ import pynmea2
 import serial
 from pyubx import Manager
 
+try:
+    from utility import get_pn_uuid, UTC
+except ImportError:
+    from app.src.utility import get_pn_uuid, UTC
+
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
 GPS_LOG = os.path.join(LOG_DIR, 'gps.log')
@@ -62,6 +67,7 @@ class CoordinateService(Manager):
         # It's the max difference in sine value vs angular value
         self.t_a_max = 7  # init greater than sine is possible
         self.set_tamax(t_a_max)  # track-average trigger
+        self.spd_holder = 0.0  # init outside func for use in comparison
 
         logger.info("GPS service initialized.")
 
@@ -137,11 +143,10 @@ class CoordinateService(Manager):
         except IndexError:
             return
 
-        s_val = 0.0  # init outside func for use in comparison
-
         # Check speed for instant diff and average diff
         def speed_alarm():
             s_val = self._spd(self.vel_array[0])  # { now: (speed, track) }
+            self.spd_holder = s_val
             """
             This gets the least-recent speed adhering to the vel_inst_seconds.
             The idea is to check less recently than the fastest rate of msgs.
@@ -173,11 +178,12 @@ class CoordinateService(Manager):
                 logger.debug("track: {} - {} - {}".format(t_val, t_i_check_val, t_a_check_val))
 
             alarm = (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
-                     abs(t_val - t_a_check_val) > self.t_a_max)
+                     abs(self.avg_sin(t_val) - t_a_check_val) > self.t_a_max)
             return alarm
 
         try:
-            if speed_alarm() or (s_val > 2.2 and track_alarm()):  # speed at rest 0-2.2
+            # speed at rest 0-2.2
+            if speed_alarm() or (self.spd_holder > 2.2 and track_alarm()):
                 try:
                     self.parent.msg_alarm = 1
                 except AttributeError:
@@ -200,15 +206,17 @@ class CoordinateService(Manager):
         if msg.__class__ is pynmea2.GGA:  # position msg
             if msg.gps_qual > 0:
                 self.latest_fix = msg
-                if self.debug: logger.debug(msg)
         elif msg.__class__ is pynmea2.VTG:  # velocity msg
-            if self.debug: logger.debug(msg)
             try:
                 speed = msg.spd_over_grnd_kmph
                 track = msg.true_track
+                if not speed or not track:  # TODO REVMOVE THIS PLZ
+                    from random import randint
+                    speed = 50 + randint(-25, 25)
+                    track = track or 180 + randint(-40, 40)
                 if speed and track:
                     # now = timestamp in seconds
-                    now = datetime.datetime.timestamp(datetime.datetime.now())
+                    now = datetime.datetime.timestamp(datetime.datetime.now(tz=UTC))
                     self.vel_array.appendleft({now: (speed, track)})
                     self._check_velocity()
             except AttributeError:

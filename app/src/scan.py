@@ -6,18 +6,15 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
 
-import pytz
 from beacontools.scanner import Monitor
 from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
 try:
-    from utility import get_pn_uuid
+    from utility import get_pn_uuid, UTC
 except ImportError:
-    from app.src.utility import get_pn_uuid
-
-UTC = pytz.timezone('UTC')
+    from app.src.utility import get_pn_uuid, UTC
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")

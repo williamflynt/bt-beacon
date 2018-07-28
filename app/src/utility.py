@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime, time
 import hashlib
 import logging
 import os
@@ -8,6 +9,9 @@ import sys
 
 import dotenv
 import psutil
+import pytz
+
+UTC = pytz.timezone('UTC')
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(FILE_DIR, "..", "..", "logs")
@@ -108,3 +112,49 @@ def get_pn_uuid(set_uuid=True, override=False, uuid_key="PN_UUID"):
             logger.debug("Written {} times".format(write_count))
     logger.debug("Returning UUID of {}".format(uuid))
     return uuid
+
+
+def sloppy_smaller(dt0, dt1, tz=UTC):
+    """
+    Compare two datetime-esque objects. Both can be naive, aware, time only,
+      full datetime, or mix and match the criteria.
+    If dt0 is smaller or equal, return 0, else return 1.
+    :param dt0: obj A datetime or time
+    :param dt1: obj A datetime or time
+    :return: int 0 or 1
+    """
+    times = 0
+    datetimes = 0
+    for obj in [dt0, dt1]:
+        if isinstance(obj, datetime):
+            datetimes += 1
+        elif isinstance(obj, time):
+            times += 1
+        else:
+            raise Exception("sloppy_smaller was passed an object of type {}".format(type(obj)))
+
+    if times == 2:
+        if dt0 <= dt1:
+            return 0
+        else:
+            return 1
+    elif datetimes == 2:
+        ts0 = dt0.astimezone(tz).timestamp()
+        ts1 = dt1.astimezone(tz).timestamp()
+        if ts0 <= ts1:
+            return 0
+        else:
+            return 1
+    else:
+        try:
+            t0 = dt0.astimezone(UTC).time()
+        except AttributeError:
+            t0 = dt0
+        try:
+            t1 = dt1.astimezone(UTC).time()
+        except AttributeError:
+            t1 = dt1
+        if t0 <= t1:
+            return 0
+        else:
+            return 1

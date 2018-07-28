@@ -8,7 +8,6 @@ import uuid
 from threading import current_thread
 from timeit import default_timer as timer
 
-import pytz
 from pubnub.enums import PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
@@ -16,11 +15,11 @@ from pubnub.pubnub import PubNub
 try:
     import gps
     import scan
-    from utility import get_pn_uuid
+    from utility import get_pn_uuid, UTC, sloppy_smaller
 except ImportError:
     import app.src.gps as gps
     import app.src.scan as scan
-    from app.src.utility import get_pn_uuid
+    from app.src.utility import get_pn_uuid, UTC, sloppy_smaller
 
 # ScanService needs a node name to publish and configure via PubNub.
 # Let's use a UUID for the device.
@@ -38,7 +37,6 @@ MSG_LOG = os.path.join(LOG_DIR, 'messages-{}.log'.format(STR_DATE))
 NODE_LOG = os.path.join(LOG_DIR, "node.log")
 
 # We work in UTC
-UTC = pytz.timezone('UTC')
 
 logging.basicConfig(filename=os.path.join(LOG_DIR,
                                           'debug.log'),
@@ -150,7 +148,7 @@ class Node(threading.Thread):
         location = self.gps_svc.get_latest_fix()
         velocity = self.gps_svc.get_latest_velocity()
 
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(tz=UTC)
         if not self.expected:
             self.expected = now + datetime.timedelta(seconds=1)
 
@@ -164,7 +162,7 @@ class Node(threading.Thread):
         if location:
             location = list(location)
             logging.debug("Loc Old Test: {} (passed)  versus {} (expected)".format(location[3], self.expected.time()))
-            is_old_location = int(location[3] > self.expected.time() or
+            is_old_location = int(sloppy_smaller(location[3], self.expected) or
                                   location == self.last_loc)
             logging.debug("Result: {}".format(is_old_location))
             location[3] = location[3].isoformat()  # %H:%M:%S
@@ -172,10 +170,10 @@ class Node(threading.Thread):
         else:
             is_old_location = 0
 
-        if velocity:
+        if velocity:  # velocity contains a full datetime
             velocity = list(velocity)
             logging.debug("Vel Old Test: {} (passed)  versus {} (expected)".format(velocity[2], self.expected.time()))
-            is_old_velocity = int(velocity[2] > self.expected or
+            is_old_velocity = int(sloppy_smaller(velocity[2], self.expected) or
                                   velocity == self.last_vel)
             logging.debug("Result: {}".format(is_old_velocity))
             velocity[2] = velocity[2].time().isoformat()  # %H:%M:%S
