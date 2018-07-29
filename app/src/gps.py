@@ -28,8 +28,8 @@ logger.addHandler(logfile)
 
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
-                 vel_inst_seconds=10, s_i_max=32.2, s_a_max=32.2,
-                 t_i_max=20, t_a_max=30, gen_fake_vel=False):
+                 vel_inst_seconds=10, s_i_max=55, s_a_max=55,
+                 t_i_max=45, t_a_max=15, gen_fake_vel=False):
         if not debug:
             logger.setLevel(logging.INFO)
         else:
@@ -177,7 +177,7 @@ class CoordinateService(Manager):
 
         try:
             # speed at rest 0-2.2
-            if speed_alarm() or (self.spd_holder > 2.2 and track_alarm()):
+            if speed_alarm() or (self.spd_holder > 2.5 and track_alarm()):
                 try:
                     self.msg_alarm = 1
                     self.latest_vel = self._constr_vel()
