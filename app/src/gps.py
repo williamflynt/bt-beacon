@@ -29,7 +29,7 @@ logger.addHandler(logfile)
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
                  vel_inst_seconds=10, s_i_max=55, s_a_max=55,
-                 t_i_max=45, t_a_max=15, gen_fake_vel=False):
+                 t_i_max=45, t_a_max=15, ref_spd=70, ref_spd_mod=35, gen_fake_vel=False):
         if not debug:
             logger.setLevel(logging.INFO)
         else:
@@ -72,6 +72,9 @@ class CoordinateService(Manager):
         self.t_a_max = 7  # init greater than sine is possible
         self.set_tamax(t_a_max)  # track-average trigger
         self.spd_holder = 0.0  # init outside func for use in comparison
+        # Used to calculate a dynamic t_i_max based on speed
+        self.ref_spd = ref_spd  # Speed to start decreasing t_i_max
+        self.ref_spd_mod = ref_spd_mod  # Used to tune t_i_max descent
 
         logger.info("GPS service initialized.")
 
@@ -165,18 +168,31 @@ class CoordinateService(Manager):
             return alarm
 
         def track_alarm():
+            # Reduce allowable instant track variance with increasing speed
+            try:
+                if self.spd_holder >= self.ref_spd:
+                    current_t_i_max = min([
+                        self.t_i_max,
+                        self.ref_spd/(self.spd_holder + self.ref_spd_mod)
+                    ])
+                else:
+                    current_t_i_max = self.t_i_max
+            except:
+                current_t_i_max = self.t_i_max
+                logger.exception("***Error calculating speed-dependent t_i_max")
+
             t_val = self._trk(self.vel_array[0])  # { now: (speed, track) }
             t_i_check_val = [self._trk(x) for x in self.vel_array if
                              self._ts(x) >= (now - self.vel_inst_seconds)][-1]
             # Compute average heading over time
             t_a_check_val = self.avg_sin([self._trk(x) for x in self.vel_array if
                                           self._ts(x) >= (now - self.vel_avg_seconds)])
-            alarm = (self.hdg_diff(t_val, t_i_check_val) > self.t_i_max or
+            alarm = (self.hdg_diff(t_val, t_i_check_val) > current_t_i_max or
                      abs(np.sin(np.radians(t_val)) - t_a_check_val) > self.t_a_max)
             return alarm
 
         try:
-            # speed at rest 0-2.2
+            # speed at rest 0-2.5
             if speed_alarm() or (self.spd_holder > 2.5 and track_alarm()):
                 try:
                     self.msg_alarm = 1
