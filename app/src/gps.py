@@ -28,8 +28,8 @@ logger.addHandler(logfile)
 
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
-                 vel_inst_seconds=10, s_i_max=55, s_a_max=55, t_i_max=45,
-                 t_a_max=15, ref_spd=70, ref_spd_mod=35, gen_fake_vel=False):
+                 vel_inst_seconds=10, s_i_max=55, s_a_max=55, t_i_max=30,
+                 t_a_max=12.5, ref_spd=40, ref_spd_mod=20, gen_fake_vel=False):
         if not debug:
             logger.setLevel(logging.INFO)
         else:
