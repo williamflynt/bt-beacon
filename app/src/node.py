@@ -187,7 +187,8 @@ class Node(threading.Thread):
                     msg_log.writelines([json.dumps(main_msg), "\n"])
 
         except Exception:
-            logger.exception("********************\n"
+            logger.exception("\n"
+                             "********************\n"
                              "***main_msg error***\n"
                              "********************")
             main_msg = None

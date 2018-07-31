@@ -28,8 +28,8 @@ logger.addHandler(logfile)
 
 class CoordinateService(Manager):
     def __init__(self, ser, debug=False, maxlen_vel=11, vel_avg_seconds=10,
-                 vel_inst_seconds=10, s_i_max=55, s_a_max=55,
-                 t_i_max=45, t_a_max=15, ref_spd=70, ref_spd_mod=35, gen_fake_vel=False):
+                 vel_inst_seconds=10, s_i_max=55, s_a_max=55, t_i_max=45,
+                 t_a_max=15, ref_spd=70, ref_spd_mod=35, gen_fake_vel=False):
         if not debug:
             logger.setLevel(logging.INFO)
         else:
@@ -41,7 +41,8 @@ class CoordinateService(Manager):
             if isinstance(ser, bytes) or isinstance(ser, str):
                 ser = serial.Serial(ser)
         except Exception:
-            logger.exception("********************\n"
+            logger.exception("\n"
+                             "********************\n"
                              "**GPS device error**\n"
                              "********************")
             raise
@@ -173,7 +174,7 @@ class CoordinateService(Manager):
                 if self.spd_holder >= self.ref_spd:
                     current_t_i_max = min([
                         self.t_i_max,
-                        self.ref_spd/(self.spd_holder + self.ref_spd_mod)
+                        (self.ref_spd/(self.spd_holder + self.ref_spd_mod)) * self.t_i_max
                     ])
                 else:
                     current_t_i_max = self.t_i_max
@@ -201,11 +202,13 @@ class CoordinateService(Manager):
                 except:
                     logger.exception("***Error getting velocity alarms")
         except KeyError:
-            logger.exception("********************\n"
+            logger.exception("\n"
+                             "********************\n"
                              "***velocity error***\n"
                              "********************")
         except Exception:
-            logger.exception("********************\n"
+            logger.exception("\n"
+                             "********************\n"
                              "***velocity error***\n"
                              "********************")
 
@@ -260,7 +263,8 @@ class CoordinateService(Manager):
         except IndexError:
             return 0
         except Exception:
-            logger.exception("********************\n"
+            logger.exception("\n"
+                             "********************\n"
                              "**constr_vel error**\n"
                              "********************")
             return 0
