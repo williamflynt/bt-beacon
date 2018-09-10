@@ -48,7 +48,7 @@ parser.add_argument(
     '--sub', help='Your subscribe key'
 )
 parser.add_argument(
-    '--interval', type=int, default=300000,
+    '--interval', type=int, default=30000,
     help='Interval between messages from node in milliseconds'
 )
 parser.add_argument(
