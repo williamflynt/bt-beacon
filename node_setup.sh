@@ -9,7 +9,8 @@ echo "Installing required packages..."
 # Install required packages
 sudo apt-get update
 sudo apt-get -y upgrade
-sudo apt-get -y install bluez bluez-hcidump python3-dev libbluetooth-dev libcap2-bin
+sudo apt-get -y install libatlas-base-dev
+sudo apt-get -y install bluez bluez-hcidump python3-dev libbluetooth-dev libcap2-bin blueman
 sudo apt-get -y install python3-venv
 
 
