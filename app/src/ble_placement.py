@@ -49,8 +49,6 @@ def set_pi_location():
                   "<p>This Raspberry Pi will use new coordinates on reboot.</p>"
 
     try:
-        x = int(x)
-        y = int(y)
         os.environ["NODE_X"] = x
         os.environ["NODE_Y"] = y
         with open(ACTIVATE_DIR, "w") as f:
