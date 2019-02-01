@@ -130,7 +130,7 @@ def set_pi_location():
                 .channel('nodes') \
                 .message(init_message) \
                 .should_store(True) \
-                .pn_async(do_nothing)
+                .sync()
 
             return template(
                 """
