@@ -15,6 +15,10 @@ ENV_FILE = os.path.join(FILE_DIR, "..", "..", "pubnub.env")
 
 @route('/')
 def index():
+    env = Path(ENV_FILE)
+    if env.exists():
+        dotenv.load_dotenv(str(env.absolute()))
+
     x = os.environ.get("NODE_X", "X")
     y = os.environ.get("NODE_Y", "Y")
     pub = os.environ.get("PUB_KEY", "Pub Key")
@@ -90,7 +94,6 @@ def set_pi_location():
         with open(ENV_FILE, "a") as f:
             f.writelines(lines)
 
-
     except Exception as e:
         return template(
             """
@@ -109,7 +112,7 @@ def set_pi_location():
                             "x": x,
                             "y": y
                         }}
-        env = Path('../../pubnub.env')
+        env = Path(ENV_FILE)
         if env.exists():
             dotenv.load_dotenv(str(env.absolute()))
         pnconfig = PNConfiguration()
