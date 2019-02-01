@@ -35,6 +35,10 @@ sudo chown pi:pi -R ./bt-beacon
 cd ./bt-beacon
 ./ble_scan_setup.sh
 ```
+And then change the hostname to something unique...
+```bash
+sudo raspi-config
+```
 And then...
 ```bash
 export PUB_KEY="pubkey"

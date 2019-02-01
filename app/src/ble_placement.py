@@ -1,5 +1,7 @@
 import os
+from pathlib import Path
 
+import dotenv
 from bottle import route, run, template, request
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
@@ -82,6 +84,9 @@ def set_pi_location():
                             "x": x,
                             "y": y
                         }}
+        env = Path('../../pubnub.env')
+        if env.exists():
+            dotenv.load_dotenv(str(env.absolute()))
         pnconfig = PNConfiguration()
         pub_key = os.environ["PUB_KEY"]
         sub_key = os.environ["SUB_KEY"]
