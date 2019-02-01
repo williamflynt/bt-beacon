@@ -1,6 +1,8 @@
 import os
 
 from bottle import route, run, template, request
+from pubnub.pnconfiguration import PNConfiguration
+from pubnub.pubnub import PubNub
 
 INTERNAL_POST = "/locate"
 POST_TO = "https://localhost:8765/locate"
@@ -68,6 +70,39 @@ def set_pi_location():
             </html>
             """.format(e=e)
         )
+
+    try:
+        init_message = {"name": os.environ["HOSTNAME"],
+                        "coords": {
+                            "x": x,
+                            "y": y
+                        }}
+        pnconfig = PNConfiguration()
+        pub_key = os.environ["PUB_KEY"]
+        sub_key = os.environ["SUB_KEY"]
+        if pub_key is not None and sub_key is not None:
+            pnconfig.subscribe_key = sub_key
+            pnconfig.publish_key = pub_key
+            pnconfig.ssl = False
+            pubnub = PubNub(pnconfig)
+            pubnub.publish() \
+                .channel('nodes') \
+                .message(init_message) \
+                .should_store(True) \
+                .sync()
+
+            return template(
+                """
+                <html>
+                <body>
+                    {}
+                </body>
+                </html>
+                """.format("<h1>Success</h1>"
+                           "<p>This Raspberry Pi has published new coords.</p>"))
+
+    except:
+        pass
 
     return template(
         """

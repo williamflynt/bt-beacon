@@ -30,11 +30,13 @@ From a fresh install of Raspbian (search Etcher):
 This code is to help you! These are the steps you should take.
 ```bash
 cd /opt
-git clone https://github.com/williamflynt/bt-beacon.git
+sudo git clone https://github.com/williamflynt/bt-beacon.git
 sudo chown pi:pi -R ./bt-beacon
 cd ./bt-beacon
 ./ble_scan_setup.sh
-    
+```
+And then...
+```bash
 export PUB_KEY="pubkey"
 export SUB_KEY="subkey"
 export NODE_X=3
