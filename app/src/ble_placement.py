@@ -74,7 +74,7 @@ def set_pi_location():
                   "<p>This Raspberry Pi will use new coordinates on reboot.</p>"
 
     try:
-        lines = [
+        a_lines = [
             "\n", "\n", "# Set BLE scanner coordinates in meters\n",
             "export NODE_X={}\n".format(x), "export NODE_Y={}\n".format(y), "\n",
             "\n", "\n", "# Set PubNub keys\n",
@@ -82,11 +82,16 @@ def set_pi_location():
             "\n", "\n", "# Set desired hostname\n",
             "export HOSTNAME={}\n".format(hostname), "\n",
         ]
+        e_lines = [
+            "NODE_X={}\n".format(x), "NODE_Y={}\n".format(y),
+            "PUB_KEY={}\n".format(pub), "SUB_KEY={}\n".format(sub),
+            "HOSTNAME={}\n".format(hostname),
+        ]
 
         with open(ACTIVATE_DIR, "a") as f:
-            f.writelines(lines)
+            f.writelines(a_lines)
         with open(ENV_FILE, "a") as f:
-            f.writelines(lines)
+            f.writelines(e_lines)
 
     except Exception as e:
         return template(
