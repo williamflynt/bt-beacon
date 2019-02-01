@@ -44,15 +44,15 @@ def index():
             <form action="{INTERNAL_POST}" method="post">
               <fieldset>
               <legend>Raspberry Pi Relative Location: </legend>
-              <input type="text" name="x" placeholder="X" value={x{ required />
+              <input type="text" name="x" placeholder="X" value="{x}" required />
               <br />
-              <input type="text" name="y" placeholder="Y" value={y} required />
+              <input type="text" name="y" placeholder="Y" value="{y}" required />
               <br/>
-              <input type="text" name="pub" placeholder="Pub Key" value={pub} required />
+              <input type="text" name="pub" placeholder="Pub Key" value="{pub}" required />
               <br/>
-              <input type="text" name="sub" placeholder="Sub Key" value={sub} required />
+              <input type="text" name="sub" placeholder="Sub Key" value="{sub}" required />
               <br/>
-              <input type="text" name="hostname" placeholder="Hostname" value={hostname} required />
+              <input type="text" name="hostname" placeholder="Hostname" value="{hostname}" required />
               <br/>
               <input type="submit" name="submit" value="Set Pi Details" />
               </fieldset>
