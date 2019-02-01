@@ -48,7 +48,7 @@ def index():
               <br/>
               <input type="text" name="sub" placeholder="{sub}" required />
               <br/>
-              <input type="text" name="sub" placeholder="{hostname}" required />
+              <input type="text" name="hostname" placeholder="{hostname}" required />
               <br/>
               <input type="submit" name="submit" value="Set Pi Details" />
               </fieldset>

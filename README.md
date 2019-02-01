@@ -12,7 +12,7 @@ This package will locate BLE beacons using trilateration.
 You have to have all these things running to get this done: 
 
 * BLE scanners (`./ble_scan.sh`)
-* Locate node (`./locate.sh`)
+* Locate node (`./locate_service.sh`)
 * BLE scanners (`./run_flask.sh`)
 
 ### Setup & Install & Scan
@@ -22,10 +22,8 @@ From a fresh install of Raspbian (search Etcher):
 1. Ensure you place the `ssh` and `wpa_supplicant` file in the boot partition
 2. Clone the repo into `/opt`:
 3. Run `./ble_scan_setup.sh`
-4. Set your `PUB_KEY` and `SUB_KEY` for PubNub using code below.
-5. Set your `NODE_X` and `NODE_Y` using code below. You can also use the 
-`ble_placement` server on `0.0.0.0:8765`.
-6. Run `./ble_scan.sh`
+4. Set your BLE scanner's environment variables using the `ble_placement` server on `0.0.0.0:8765`.
+6. Run `./ble_scan.sh` or `sudo reboot` and wait for the `systemd` service to start.
 
 This code is to help you! These are the steps you should take.
 ```bash
@@ -35,7 +33,11 @@ sudo chown pi:pi -R ./bt-beacon
 cd ./bt-beacon
 ./ble_scan_setup.sh
 ```
-And then change the hostname to something unique...
+Then visit the setup page on post 8765. Ex: `192.168.0.110:8765`
+
+Finally, reboot the Pi: `sudo reboot`
+
+If that doesn't work...
 ```bash
 sudo raspi-config
 ```
