@@ -107,7 +107,7 @@ class BleMonitor(Monitor):
                 .channel('raw_channel') \
                 .message(message) \
                 .should_store(True) \
-                .async(self._publish_callback)
+                .pn_async(self._publish_callback)
 
     def retrieve_in_view(self, fetch_status='unpublished',
                          set_status='retrieved',
@@ -181,7 +181,7 @@ class ScanService(object):
             self.pubnub.publish() \
                 .channel('raw_channel') \
                 .message(message) \
-                .async(self._publish_callback)
+                .pn_async(self._publish_callback)
 
     def _on_receive(self, bt_addr, rssi, packet, additional_info):
         now = datetime.now(UTC)
@@ -215,7 +215,7 @@ class ScanService(object):
                 .channel('raw_channel') \
                 .message(message) \
                 .should_store(True) \
-                .async(self._publish_callback)
+                .pn_async(self._publish_callback)
 
     def retrieve_in_view(self, reset=False):
         temp_msgs = defaultdict(list)

@@ -10,6 +10,10 @@ echo "Installing required packages..."
 sudo apt-get -y install bluez bluez-hcidump python3-dev libbluetooth-dev libcap2-bin blueman
 sudo apt-get -y install python3-venv
 
+echo "Creating required directories..."
+# Make log dir, etc
+mkdir ${DIR}/logs
+
 echo "Setting up virtual environment"
 # Create and activate our virtual environment
 cd $DIR

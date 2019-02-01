@@ -200,7 +200,7 @@ class Node(threading.Thread):
                 .message(main_msg) \
                 .should_store(True) \
                 .meta({"msg_id": msg_id}) \
-                .async(self._publish_callback)
+                .pn_async(self._publish_callback)
         else:
             logger.debug(("OFFLINE MSG", {
                 "gps": self.gps_svc.get_latest_fix(),

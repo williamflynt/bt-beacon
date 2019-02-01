@@ -72,7 +72,7 @@ class BeaconLocator(SubscribeCallback):
             .channel('ranged') \
             .message(message) \
             .should_store(True) \
-            .async(self._publish_callback)
+            .pn_async(self._publish_callback)
 
     def _publish_location(self, bt_addr, timestamp, coords, meta=None):
         if meta is None:
@@ -82,7 +82,7 @@ class BeaconLocator(SubscribeCallback):
             .channel('located') \
             .message(message) \
             .should_store(True) \
-            .async(self._publish_callback)
+            .pn_async(self._publish_callback)
 
     def _publish_callback(self, result, status):
         # Check whether request successfully completed or not
