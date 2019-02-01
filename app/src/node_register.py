@@ -64,7 +64,7 @@ def getkeys():
                        'Warning: </span> The SSL Certificates could not be ' \
                        'verified. Proceed only if this is a known issue. ' \
                        'Otherwise check your credentials against known ' \
-                       'credentials on the node directly.</p'
+                       'credentials on the node directly.</p>'
 
     if r.status_code == requests.codes.forbidden:
         return template('''

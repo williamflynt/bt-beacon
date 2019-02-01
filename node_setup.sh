@@ -67,7 +67,7 @@ sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR@" $DIR/setup/node.service
 sudo cp $DIR/setup/node.service /etc/systemd/system/node.service
 
 
-echo "Copying node_registrtion.service ..."
+echo "Copying node_registration.service ..."
 # Run the NodeRegistration server
 EXEC="$VPYTHON $DIR/app/src/node_register.py"
 sed -i "s@ExecStart=.*@ExecStart=$EXEC@" $DIR/setup/node_register.service
