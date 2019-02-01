@@ -19,7 +19,7 @@ def index():
     x = os.environ.get("NODE_X", "X")
     y = os.environ.get("NODE_Y", "Y")
     return template(
-        f"""
+        """
         <html>
         <head><title>Node Registration</title></head>
         <body>
@@ -43,7 +43,7 @@ def index():
         
         </body>
         </html>
-        """
+        """.format(INTERNAL_POST=INTERNAL_POST, x=x, y=y)
     )
 
 
@@ -67,24 +67,24 @@ def set_pi_location():
 
     except Exception as e:
         return template(
-            f"""
+            """
             <html>
             <body>
                 <h3>Oops</h3>
                 <p>{e}</p>
             </body>
             </html>
-            """
+            """.format(e=e)
         )
 
     return template(
-        f"""
+        """
         <html>
         <body>
             {success_msg}
         </body>
         </html>
-        """
+        """.format(success_msg=success_msg)
     )
 
 
@@ -100,7 +100,7 @@ def logmon():
             <p style="color: #777;">{NODE_ID}</p>
         </body>
         </html>
-        """
+        """.format(NODE_ID=NODE_ID)
     )
 
 

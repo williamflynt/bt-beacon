@@ -3,7 +3,8 @@
 # Before running this make sure you set chmod +x ./ble_scan_setup.sh
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
+# Go to this DIR on login
+echo "cd ${DIR}" >> /home/${USER}/.bashrc
 
 echo "Installing required packages..."
 sudo apt-get -y install bluez bluez-hcidump python3-dev libbluetooth-dev libcap2-bin blueman
@@ -19,6 +20,9 @@ sed -i "\$a$PATHLINE" ${DIR}/venv/bin/activate
 sed -i "\$a$PATHLINE" ~/.bashrc
 echo "Activating virtual environment"
 source ${DIR}/venv/bin/activate
+# Activate venv on login to shell
+echo "source ${DIR}/venv/bin/activate" >> /home/${USER}/.bashrc
+
 
 echo "Providing socket permissions to Python..."
 # Give python the required socket permissions
@@ -29,6 +33,7 @@ echo "Installing required Python packages..."
 pip install --upgrade pip
 pip install wheel
 pip install -r app/requirements.scan.txt
+pip install -r app/requirements.web.txt
 chmod +x ble_scan.sh
 
 # Set path to venv python as env var
@@ -43,10 +48,10 @@ sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR@" $DIR/setup/ble_scan.servic
 sudo cp $DIR/setup/ble_scan.service /etc/systemd/system/ble_scan.service
 
 echo "Copying ble_placement.service ..."
-# Run the NodeRegistration server
+# Run the BLE Placement server
 EXEC="$VPYTHON $DIR/app/src/ble_placement.py"
 sed -i "s@ExecStart=.*@ExecStart=$EXEC@" $DIR/setup/ble_placement.service
-sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR@" $DIR/setup/ble_placement.service
+sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR/app/src@" $DIR/setup/ble_placement.service
 sudo cp $DIR/setup/ble_placement.service /etc/systemd/system/ble_placement.service
 
 echo "Enabling and starting BLE Scan Service..."

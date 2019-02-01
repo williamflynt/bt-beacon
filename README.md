@@ -25,16 +25,15 @@ From a fresh install of Raspbian (search Etcher):
 4. Set your `PUB_KEY` and `SUB_KEY` for PubNub using code below.
 5. Set your `NODE_X` and `NODE_Y` using code below. You can also use the 
 `ble_placement` server on `0.0.0.0:8765`.
-6. Edit `./ble_scan.sh` to have your X and Y correct (last 2 digits/args)
-7. Run `./ble_scan.sh`
+6. Run `./ble_scan.sh`
 
-This code is to help you remember to set your keys! It will automatically set them at 
-your next SSH login.
+This code is to help you! These are the steps you should take.
 ```bash
 cd /opt
 git clone https://github.com/williamflynt/bt-beacon.git
 sudo chown pi:pi -R ./bt-beacon
 cd ./bt-beacon
+./ble_scan_setup.sh
     
 export PUB_KEY="pubkey"
 export SUB_KEY="subkey"
@@ -44,6 +43,10 @@ echo "export PUB_KEY=${PUB_KEY}" >> ~/.bashrc
 echo "export SUB_KEY=${SUB_KEY}" >> ~/.bashrc
 echo "export NODE_X=${NODE_X}" >> ~/.bashrc
 echo "export NODE_Y=${NODE_Y}" >> ~/.bashrc
+echo "export PUB_KEY=${PUB_KEY}" >> /opt/bt-beacon/bin/activate
+echo "export SUB_KEY=${SUB_KEY}" >> /opt/bt-beacon/bin/activate
+echo "export NODE_X=${NODE_X}" >> /opt/bt-beacon/bin/activate
+echo "export NODE_Y=${NODE_Y}" >> /opt/bt-beacon/bin/activate
 ```
 
 ### Location Service & Viewing Data
