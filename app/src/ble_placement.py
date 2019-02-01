@@ -74,12 +74,6 @@ def set_pi_location():
                   "<p>This Raspberry Pi will use new coordinates on reboot.</p>"
 
     try:
-        os.environ["NODE_X"] = x
-        os.environ["NODE_Y"] = y
-        os.environ["PUB_KEY"] = pub
-        os.environ["SUB_KEY"] = sub
-        os.environ["HOSTNAME"] = hostname
-
         lines = [
             "\n", "\n", "# Set BLE scanner coordinates in meters\n",
             "export NODE_X={}\n".format(x), "export NODE_Y={}\n".format(y), "\n",
