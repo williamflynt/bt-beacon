@@ -2,4 +2,4 @@
 
 source ./venv/bin/activate
 cd app/src
-flask run
+python app.py

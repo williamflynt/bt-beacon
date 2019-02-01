@@ -43,10 +43,10 @@ echo "export PUB_KEY=${PUB_KEY}" >> ~/.bashrc
 echo "export SUB_KEY=${SUB_KEY}" >> ~/.bashrc
 echo "export NODE_X=${NODE_X}" >> ~/.bashrc
 echo "export NODE_Y=${NODE_Y}" >> ~/.bashrc
-echo "export PUB_KEY=${PUB_KEY}" >> /opt/bt-beacon/bin/activate
-echo "export SUB_KEY=${SUB_KEY}" >> /opt/bt-beacon/bin/activate
-echo "export NODE_X=${NODE_X}" >> /opt/bt-beacon/bin/activate
-echo "export NODE_Y=${NODE_Y}" >> /opt/bt-beacon/bin/activate
+echo "export PUB_KEY=${PUB_KEY}" >> /opt/bt-beacon/venv/bin/activate
+echo "export SUB_KEY=${SUB_KEY}" >> /opt/bt-beacon/venv/bin/activate
+echo "export NODE_X=${NODE_X}" >> /opt/bt-beacon/venv/bin/activate
+echo "export NODE_Y=${NODE_Y}" >> /opt/bt-beacon/venv/bin/activate
 ```
 
 ### Location Service & Viewing Data

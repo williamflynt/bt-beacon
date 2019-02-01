@@ -51,7 +51,7 @@ echo "Copying ble_placement.service ..."
 # Run the BLE Placement server
 EXEC="$VPYTHON $DIR/app/src/ble_placement.py"
 sed -i "s@ExecStart=.*@ExecStart=$EXEC@" $DIR/setup/ble_placement.service
-sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR/app/src@" $DIR/setup/ble_placement.service
+sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR@" $DIR/setup/ble_placement.service
 sudo cp $DIR/setup/ble_placement.service /etc/systemd/system/ble_placement.service
 
 echo "Enabling and starting BLE Scan Service..."

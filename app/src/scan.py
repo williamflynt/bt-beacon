@@ -12,7 +12,7 @@ from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
 try:
-    from utility import get_pn_uuid, UTC
+    from .utility import get_pn_uuid, UTC
 except ImportError:
     from app.src.utility import get_pn_uuid, UTC
 
