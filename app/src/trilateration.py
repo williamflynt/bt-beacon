@@ -22,6 +22,10 @@ class TrilaterationSolver(object):
         :param y2: float or int Y Coord for Point 2
         :return: float Distance in same units as provided coordinates
         """
+        x1 = float(x1)
+        x2 = float(x2)
+        y1 = float(y1)
+        y2 = float(y2)
         distance = math.sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
         return distance
 

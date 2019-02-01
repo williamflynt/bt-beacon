@@ -1,7 +1,7 @@
 let expanderVar = 50;
 
 let defaultWidth = 10 * expanderVar;
-let defaultHeight = 5 * expanderVar;
+let defaultHeight = 7.5 * expanderVar;
 
 let svgContainer = d3.select("#svgSpace").append("svg")
     .attr("width", defaultWidth)
