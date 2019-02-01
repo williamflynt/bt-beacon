@@ -13,6 +13,10 @@ ACTIVATE_DIR = os.path.join(FILE_DIR, "..", "..", "venv", "bin", "activate")
 ENV_FILE = os.path.join(FILE_DIR, "..", "..", "pubnub.env")
 
 
+def do_nothing(*args, **kwargs):
+    pass
+
+
 @route('/')
 def index():
     env = Path(ENV_FILE)
@@ -126,7 +130,7 @@ def set_pi_location():
                 .channel('nodes') \
                 .message(init_message) \
                 .should_store(True) \
-                .pn_async()
+                .pn_async(do_nothing)
 
             return template(
                 """

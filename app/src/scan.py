@@ -243,7 +243,7 @@ class ScanService(object):
             .channel('nodes') \
             .message(init_message) \
             .should_store(True) \
-            .pn_async()
+            .pn_async(self._publish_callback)
         # print("{} at coords {}".format(self.node_name, self.node_coords))
         self.scanner = Monitor(self._on_receive, 0, None, None)
         # self.scanner = BeaconScanner(self._on_receive)
