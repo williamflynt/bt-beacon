@@ -56,7 +56,7 @@ def set_pi_location():
         with open(ACTIVATE_DIR, "w") as f:
             f.writelines([
                 "\n", "\n", "# Set BLE scanner coordinates in meters",
-                f"export NODE_X={x}", f"export NODE_X={y}", "\n", "\n"
+                "export NODE_X={}".format(x), "export NODE_X={}".format(y), "\n", "\n"
             ])
 
     except Exception as e:
