@@ -2,13 +2,7 @@ import os
 
 from bottle import route, run, template, request
 
-try:
-    from utility import get_pn_uuid
-except ImportError:
-    from app.src.utility import get_pn_uuid
-
 INTERNAL_POST = "/locate"
-NODE_ID = get_pn_uuid()
 POST_TO = "https://localhost:8765/locate"
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIVATE_DIR = os.path.join(FILE_DIR, "..", "..", "venv", "bin", "activate")
@@ -85,22 +79,6 @@ def set_pi_location():
         </body>
         </html>
         """.format(success_msg=success_msg)
-    )
-
-
-@route('/logmon')
-def logmon():
-    return template(
-        f"""
-        <html>
-        <head><title>Log Monitor</title></head>
-        
-        <body>
-            <h1>Log Monitor</h1>
-            <p style="color: #777;">{NODE_ID}</p>
-        </body>
-        </html>
-        """.format(NODE_ID=NODE_ID)
     )
 
 
