@@ -266,6 +266,14 @@ if __name__ == "__main__":
 
     publish = True
 
+    # Make it happen for services with no access to env
+    if len(sys.argv) == 1:
+        pub = os.environ["PUB_KEY"]
+        sub = os.environ["SUB_KEY"]
+        if pub and sub and (pub != "" and sub != ""):
+            sys.argv.append(pub)
+            sys.argv.append(sub)
+
     if len(sys.argv) < 3:
         print("Call scan.py like:")
         print("  python scan.py pub_key sub_key [publish]")

@@ -45,7 +45,7 @@ VPYTHON=$(which python)
 
 echo "Copying ble_scan.service ..."
 # Create service for BLE scanner
-EXEC="$DIR/ble_scan.sh"
+EXEC="$VPYTHON $DIR/app/src/scan.py"
 sed -i "s@ExecStart=.*@ExecStart=$EXEC@" $DIR/setup/ble_scan.service
 sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR@" $DIR/setup/ble_scan.service
 sudo cp $DIR/setup/ble_scan.service /etc/systemd/system/ble_scan.service
