@@ -41,10 +41,16 @@ export PUB_KEY="pubkey"
 export SUB_KEY="subkey"
 export NODE_X=3
 export NODE_Y=3
+
+echo "PUB_KEY=${PUB_KEY}" >> /opt/bt-beacon/pubnub.env
+echo "SUB_KEY=${SUB_KEY}" >> /opt/bt-beacon/pubnub.env
+echo "HOSTNAME=${HOSTNAME}" >> /opt/bt-beacon/pubnub.env
+
 echo "export PUB_KEY=${PUB_KEY}" >> ~/.bashrc
 echo "export SUB_KEY=${SUB_KEY}" >> ~/.bashrc
 echo "export NODE_X=${NODE_X}" >> ~/.bashrc
 echo "export NODE_Y=${NODE_Y}" >> ~/.bashrc
+
 echo "export PUB_KEY=${PUB_KEY}" >> /opt/bt-beacon/venv/bin/activate
 echo "export SUB_KEY=${SUB_KEY}" >> /opt/bt-beacon/venv/bin/activate
 echo "export NODE_X=${NODE_X}" >> /opt/bt-beacon/venv/bin/activate

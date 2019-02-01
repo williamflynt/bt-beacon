@@ -43,9 +43,14 @@ chmod +x ble_scan.sh
 echo "Getting virtual environment Python path..."
 VPYTHON=$(which python)
 
+echo "Inserting Python executable path into service Python files..."
+# Replace first line of do_ble_scan.py with correct interpreter for venv
+VPYTHON=$(which python)
+sed -i " 1 s@.*@&$VPYTHON@" do_ble_scan.py
+
 echo "Copying ble_scan.service ..."
 # Create service for BLE scanner
-EXEC="$VPYTHON $DIR/app/src/scan.py"
+EXEC="$VPYTHON $DIR/do_ble_scan.py"
 sed -i "s@ExecStart=.*@ExecStart=$EXEC@" $DIR/setup/ble_scan.service
 sed -i "s@WorkingDirectory=.*@WorkingDirectory=$DIR@" $DIR/setup/ble_scan.service
 sudo cp $DIR/setup/ble_scan.service /etc/systemd/system/ble_scan.service

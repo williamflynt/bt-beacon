@@ -8,6 +8,7 @@ INTERNAL_POST = "/locate"
 POST_TO = "https://localhost:8765/locate"
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIVATE_DIR = os.path.join(FILE_DIR, "..", "..", "venv", "bin", "activate")
+ENV_FILE = os.path.join(FILE_DIR, "..", "..", "pubnub.env")
 
 
 @route('/')
@@ -56,7 +57,11 @@ def set_pi_location():
         with open(ACTIVATE_DIR, "a") as f:
             f.writelines([
                 "\n", "\n", "# Set BLE scanner coordinates in meters\n",
-                "export NODE_X={}\n".format(x), "export NODE_X={}\n".format(y), "\n",
+                "export NODE_X={}\n".format(x), "export NODE_Y={}\n".format(y), "\n",
+            ])
+        with open(ENV_FILE, "a") as f:
+            f.writelines([
+                "\n", "\n", "NODE_X={}\n".format(x), "NODE_Y={}\n".format(y), "\n",
             ])
 
     except Exception as e:
