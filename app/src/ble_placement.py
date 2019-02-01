@@ -138,8 +138,8 @@ def set_pi_location():
                 """.format("<h1>Success</h1>"
                            "<p>This Raspberry Pi has published new coords.</p>"))
 
-    except:
-        pass
+    except Exception as e:
+        success_msg = success_msg + "<p>{}</p>".format(e)
 
     return template(
         """

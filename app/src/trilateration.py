@@ -51,7 +51,7 @@ class TrilaterationSolver(object):
             # error_mod is 1.5
             # calced_error is multiplied by (1 - .015)
             # calced_error = 0.985 * calced_error
-            error_mod = max(0, distance-2.0)
+            error_mod = max(0, distance-1.5)
             calced_error *= (1-(error_mod/100.0))
 
             mse += math.pow(calced_error, 2.0)

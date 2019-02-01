@@ -44,8 +44,8 @@ class BeaconLocator(SubscribeCallback):
         # beacon_matrix = {
         #     "bluecharm": -59.8,
         # }
-        self.n = 3.7  # Path loss exponent = 1.6-1.8 w/LOS to beacon indoors
-        self.measured_rssi = -59.8  # Beacon-specific measured RSSI @ 1m
+        self.n = 2.5  # Path loss exponent = 1.6-1.8 w/LOS to beacon indoors
+        self.measured_rssi = -50.5  # Beacon-specific measured RSSI @ 1m
 
         self.solver = TrilaterationSolver()
 
