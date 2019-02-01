@@ -51,10 +51,10 @@ def set_pi_location():
     try:
         os.environ["NODE_X"] = x
         os.environ["NODE_Y"] = y
-        with open(ACTIVATE_DIR, "w") as f:
+        with open(ACTIVATE_DIR, "a") as f:
             f.writelines([
-                "\n", "\n", "# Set BLE scanner coordinates in meters",
-                "export NODE_X={}".format(x), "export NODE_X={}".format(y), "\n", "\n"
+                "\n", "\n", "# Set BLE scanner coordinates in meters\n",
+                "export NODE_X={}\n".format(x), "export NODE_X={}\n".format(y), "\n",
             ])
 
     except Exception as e:
