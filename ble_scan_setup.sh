@@ -32,8 +32,7 @@ sudo setcap 'cap_net_raw,cap_net_admin+eip' $(readlink -f $(which python3))
 echo "Installing required Python packages..."
 pip install --upgrade pip
 pip install wheel
-pip install -r app/requirements.scan.txt
-pip install -r app/requirements.web.txt
+pip install -r app/requirements.txt
 chmod +x ble_scan.sh
 
 # Set path to venv python as env var

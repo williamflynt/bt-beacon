@@ -1,6 +1,6 @@
 # BT Beacon
 
-This package will locate BLE beacons with trilateration.
+This package will locate BLE beacons using trilateration.
 
 
 ### Hardware
