@@ -33,7 +33,7 @@ def index():
         
             <h1>BLE Scanner Location</h1>
             <hr/>
-            {pub}
+            {pub}<br />
             {sub}
             <br/><br/>
             
@@ -126,7 +126,7 @@ def set_pi_location():
                 .channel('nodes') \
                 .message(init_message) \
                 .should_store(True) \
-                .sync()
+                .pn_async()
 
             return template(
                 """
